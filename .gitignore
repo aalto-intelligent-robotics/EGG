@@ -1,0 +1,15 @@
+*dataset*/
+__pycache__
+output/
+logs/
+weights/
+*.png
+*.jpg
+*.jpeg
+*.pt
+*.pth
+*.npy
+*.svg
+*.bak
+graph*.json
+eval*.json
