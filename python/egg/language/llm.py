@@ -26,7 +26,6 @@ class LLMAgent:
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.temperature = temperature
-        # Change the `path` variable to the endpoint listed at https://www.aalto.fi/en/services/aalto-ai-apis
         if use_gpt4o:
             if use_mini:
                 base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4o-mini-2024-07-18"
@@ -35,16 +34,16 @@ class LLMAgent:
                 # base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4o-2024-11-20"
                 base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/gpt4o"
                 logger.info(f"Using GPT4o from {base_url}")
-            aalto_openai_endpoint_url = "/chat/completions"
+            openai_endpoint_url = "/chat/completions"
         else:
             base_url = "https://aalto-openai-apigw.azure-api.net"
-            aalto_openai_endpoint_url = "/v1/chat/gpt-35-turbo-1106"
+            openai_endpoint_url = "/v1/chat/gpt-35-turbo-1106"
             logger.info(f"Using GPT3.5")
 
         # Set API key in terminal: export AALTO_OPENAI_API_KEY=""
-        aalto_api_key = os.environ.get("AALTO_OPENAI_API_KEY")
+        api_key = os.environ.get("AALTO_OPENAI_API_KEY")
         assert (
-            aalto_api_key is not None
+            api_key is not None
         ), "you must set the `AALTO_OPENAI_API_KEY` environment variable."
 
         """
@@ -54,13 +53,13 @@ class LLMAgent:
 
         def update_base_url(request: httpx.Request) -> None:
             if request.url.path == "/chat/completions":
-                request.url = request.url.copy_with(path=aalto_openai_endpoint_url)
+                request.url = request.url.copy_with(path=openai_endpoint_url)
 
         self.client = OpenAI(
             base_url=base_url,
             api_key="False",  # API key not used, and rather set below
             default_headers={
-                "Ocp-Apim-Subscription-Key": aalto_api_key,
+                "Ocp-Apim-Subscription-Key": api_key,
             },
             http_client=httpx.Client(event_hooks={"request": [update_base_url]}),
         )
