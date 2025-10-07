@@ -27,9 +27,9 @@ The prompts that are used for Generative AI are available [here](./Appendix.md)
 
 We tested EGG on a laptop with an RTX 3070 GPU Mobile.
 
-🐳 We highly recommend using Docker for deploying EGG. We provide pre-built Dockerfiles here (https://github.com/aalto-intelligent-robotics/REACT-docker)
+🐳 We highly recommend using Docker for deploying EGG. We provide pre-built Dockerfiles here (https://github.com/aalto-intelligent-robotics/EGG-docker)
 
-If you do not want to use Docker for some reason, REACT was tested on Ubuntu 20.04 with ROS Noetic installed. Follow the instructions [here](https://wiki.ros.org/ROS/Installation) if you do not yet have it on your system. The other requirements are:
+If you do not want to use Docker for some reason, EGG was tested on Ubuntu 20.04 with ROS Noetic installed. Follow the instructions [here](https://wiki.ros.org/ROS/Installation) if you do not yet have it on your system. The other requirements are:
 
 - [VideoRefer](https://github.com/DAMO-NLP-SG/VideoRefer) (if you want to automatically generate video captions, otherwise you can use the provided ground truth data)
 - OpenAI AI API key (for graph pruning, evaluation, and generating image captions)
