@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 import open3d as o3d
 import open3d.visualization.gui as gui
 import open3d.visualization.rendering as rendering
+import argparse
 
 from egg.utils.visualizer import EGGVisualizer
 from egg.graph.spatial_graph import SpatialGraph
@@ -22,17 +23,20 @@ EDGE_COLOR = [0.2, 0.2, 0.2]
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-f", "--file", default="./graph_gt.json")
+    parser.add_argument("-p", "--pcd", default="/home/ros/data/map_cloud.pcd")
+    args = parser.parse_args()
     spatial_graph = SpatialGraph()
     event_graph = EventGraph()
     egg = EGG(spatial_graph, event_graph)
-    egg.deserialize("./graph_gt.json")
+    egg.deserialize(args.file)
     egg.gen_room_nodes()
     # Customize these as needed:
-    PCD_PATH = "/home/ros/data/map_cloud.pcd"
 
     vis = EGGVisualizer(
         egg=egg,
-        pcd_path=PCD_PATH,
+        pcd_path=args.pcd,
         panel_height=320,
         window_size=(1024, 768),
     )
