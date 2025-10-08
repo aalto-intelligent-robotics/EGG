@@ -1,13 +1,9 @@
 from typing import Dict, Optional, Tuple
 import logging
-import os
 from numpy.typing import NDArray
-import cv2
 from copy import deepcopy
 
 from egg.perception.instance_matching import are_similar_objects
-from egg.utils.bounding_box import BoundingBox
-from egg.utils.read_data import get_hydra_data, get_node_attrs, get_map_views
 from egg.graph.node import ObjectNode, RoomNode
 from egg.utils.timestamp import ns_to_datetime
 from egg.utils.logger import getLogger
@@ -77,38 +73,6 @@ class SpatialGraph:
             self._object_nodes[id].cut_timestamped_position(
                 min_timestamp, max_timestamp
             )
-
-    def init_object_nodes_from_hydra(self, hydra_path: str):
-        instance_views_data, map_view_data, dsg_data = get_hydra_data(hydra_path)
-        self._map_views = get_map_views(map_views_data=map_view_data)
-        if not os.path.exists(hydra_path):
-            raise AssertionError(f"{hydra_path} does not exists")
-        for instance_data in instance_views_data:
-            node_id = instance_data["node_id"]
-            all_masks_data = instance_data["masks"]
-            node_data = get_node_attrs(dsg_data, node_id)
-            bbox_data = node_data["bounding_box"]
-            bounding_box = BoundingBox.from_dim_and_pos(
-                dimensions=bbox_data["dimensions"], position=bbox_data["world_P_center"]
-            )
-            assert node_data is not None, f"{node_id} not found from dsg"
-            instance_views = {}
-            for _, mask_data in enumerate(all_masks_data):
-                mask_file = str(mask_data["file"])
-                map_view_id = mask_data["map_view_id"]
-                mask = cv2.imread(mask_file)
-                assert mask is not None, f"Cannot read mask from {mask_file}"
-                instance_views[map_view_id] = mask[:, :, 0]
-            new_node = ObjectNode(
-                node_id=node_id,
-                name=instance_data["name"] + "_" + str(node_id),
-                object_class=instance_data["name"],
-                timestamped_position={
-                    int(node_data["last_update_time_ns"]): bounding_box.get_center()
-                },
-                visual_embedding=None,
-            )
-            self._object_nodes.update({new_node.node_id: new_node})
 
     def get_object_node_by_id(self, node_id: int) -> Optional[ObjectNode]:
         if node_id not in self._object_nodes.keys():
