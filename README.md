@@ -88,7 +88,7 @@ To start with EGG, you need to set up the data as folowed:
 
 To build EGG, use one of the following:
 ```bash
-cd egg/app
+roscd egg/app
 # To build a graph from ground truth
 python3 build_graph.py
 # To build a graph with guided captioning (Requires GPU!)
@@ -101,13 +101,13 @@ The result will be a json file, e.g., "graph_gt.json"
 
 To visualize EGG, make sure you have open3d installed and run:
 ```bash
-cd egg/app
+roscd egg/app
 python3 egg_visualizer.py
 ```
 
 To replicate the information retrieval experiments:
 ```bash
-cd egg/app
+roscd egg/app
 # Change the strategy, the possible values are ['pruning_unified', 'pruning_unified_no_edge', 'spatial', 'event', 'no_edge', 'full_unified']
 python3 eval.py -s pruning_unified -t 1
 ```
