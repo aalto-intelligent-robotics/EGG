@@ -5,6 +5,10 @@
 
 ## 🚀 Overview
 
+<div align="center">
+    <img src="./assets/shortclip_ral2025.gif">
+</div>
+
 **Abstract:** A fundamental aspect for building intelligent autonomous
 robots that can assist humans in their daily lives is the
 construction of rich environmental representations. While advances in
