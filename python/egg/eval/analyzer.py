@@ -14,6 +14,9 @@ logger: logging.Logger = getLogger(
 
 
 class EGGAnalyzer:
+    """
+    Class to evaluate the results of EGG
+    """
     def __init__(self, eval_data_file: str):
         with open(eval_data_file, "r") as fp:
             self.eval_data = json.load(fp)

@@ -6,8 +6,8 @@ import logging
 import json
 import argparse
 
-from egg.graph.spatial_graph import SpatialGraph
-from egg.graph.event_graph import EventGraph
+from egg.graph.spatial import SpatialComponents
+from egg.graph.event import EventComponents
 from egg.graph.egg import EGG
 from egg.utils.logger import getLogger
 from egg.language.llm import LLMAgent
@@ -25,8 +25,8 @@ logger: logging.Logger = getLogger(
     fileLevel=logging.DEBUG,
     log_file="build_graph.log",
 )
-spatial_graph = SpatialGraph()
-event_graph = EventGraph()
+spatial_graph = SpatialComponents()
+event_graph = EventComponents()
 use_gt_caption = not args.auto
 use_guided_auto_caption = not args.unguided
 
@@ -61,16 +61,16 @@ for event_param_file in sorted(yaml_files):
     )
 
 egg.gen_room_nodes()
-
-llm_agent = LLMAgent(use_mini=False)
-egg.gen_object_captions(llm_agent=llm_agent)
-
+#
+# llm_agent = LLMAgent(use_mini=False)
+# egg.gen_object_captions(llm_agent=llm_agent)
+#
 logger.info(egg.pretty_str())
-if use_gt_caption:
-    graph_filename = "graph_gt.json"
-elif use_guided_auto_caption:
-    graph_filename = "graph_auto_guided.json"
-else:
-    graph_filename = "graph_auto_unguided.json"
-with open(graph_filename, "w") as f:
-    json.dump(egg.serialize(), f)
+# if use_gt_caption:
+#     graph_filename = "graph_gt.json"
+# elif use_guided_auto_caption:
+#     graph_filename = "graph_auto_guided.json"
+# else:
+#     graph_filename = "graph_auto_unguided.json"
+# with open(graph_filename, "w") as f:
+#     json.dump(egg.serialize(), f)

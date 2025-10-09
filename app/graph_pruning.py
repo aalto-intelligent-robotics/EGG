@@ -4,8 +4,8 @@ import datetime
 import logging
 import argparse
 
-from egg.graph.spatial_graph import SpatialGraph
-from egg.graph.event_graph import EventGraph
+from egg.graph.spatial import SpatialComponents
+from egg.graph.event import EventComponents
 from egg.graph.egg import EGG
 from egg.pruning.strategies import RetrievalStrategy
 from egg.utils.logger import getLogger
@@ -21,8 +21,8 @@ logger: logging.Logger = getLogger(
     fileLevel=logging.DEBUG,
     log_file="build_graph.log",
 )
-spatial_graph = SpatialGraph()
-event_graph = EventGraph()
+spatial_graph = SpatialComponents()
+event_graph = EventComponents()
 egg = EGG(spatial_graph, event_graph)
 
 egg.deserialize("./graph_gt.json")
