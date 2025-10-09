@@ -31,7 +31,7 @@ class QADataset:
                 object_names = ast.literal_eval(answer)
                 is_valid_answer = True
                 for name in object_names:
-                    obj_id = self.egg.get_spatial_graph().get_object_node_by_name(name)
+                    obj_id = self.egg.get_spatial_components().get_object_node_by_name(name)
                     if obj_id is None:
                         is_valid_answer = False
                 if is_valid_answer:

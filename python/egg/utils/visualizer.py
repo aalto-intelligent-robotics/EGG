@@ -42,17 +42,18 @@ class EGGVisualizer:
     def __init__(
         self,
         egg: EGG,
-        pcd_path=None,
-        panel_height=120,
-        window_size=(1024, 768),
-        title="EGG Viewer",
+        pcd_path: Optional[str] = None,
+        panel_height: int = 120,
+        window_size: Tuple[int, int] = (1024, 768),
+        title: str = "EGG Viewer",
+        pcd_z_filter: float = 2.0,
     ):
         self.egg = egg
-        self.event_ids = self.egg.get_event_graph().get_event_ids()
+        self.event_ids = self.egg.get_event_components().get_event_ids()
         self.room_offset = 3
         self.building_offset = 4
-        # Configuration
-        self.slider_values = list(range(0, self.egg.get_event_graph().get_num_events()))
+
+        self.slider_values = list(range(0, self.egg.get_event_components().get_num_events()))
 
         self.pcd_path = pcd_path
         self.panel_height = panel_height
@@ -67,17 +68,15 @@ class EGGVisualizer:
         self.slider = None
         self.label = None
 
-        # Rendering resources
         self.material = rendering.MaterialRecord()
-        self.material.shader = (
-            "defaultLit"  # simple lit material; no extra lights created
-        )
+        self.material.shader = "defaultLit"
 
-        # Data
         self.pcd = None
+        self.pcd_z_filter = pcd_z_filter
 
-    def load_and_filter_pcd(self):
-        """Load point cloud and remove points with z >= 5.
+    def load_and_filter_pcd(self) -> Optional[o3d.geometry.PointCloud]:
+        """
+        Load point cloud and remove points with z >= pcd_z_filter.
 
         Preserves colors if present.
         """
@@ -89,7 +88,7 @@ class EGGVisualizer:
             return pcd
 
         pts = np.asarray(pcd.points)
-        mask = pts[:, 2] < 2.0
+        mask = pts[:, 2] < self.pcd_z_filter
         filtered_pts = pts[mask]
 
         filtered_pcd = o3d.geometry.PointCloud()
@@ -156,7 +155,7 @@ class EGGVisualizer:
     def update_event(self, event_id: int):
         event_viz = self.draw_event_node(event_id)
         event_viz += self.draw_room_nodes()
-        event_node = self.egg.get_event_graph().get_event_node_by_id(event_id)
+        event_node = self.egg.get_event_components().get_event_node_by_id(event_id)
         assert event_node is not None
         self.scene_widget.scene.clear_geometry()
         if self.pcd is not None:
@@ -169,7 +168,7 @@ class EGGVisualizer:
 
     def draw_room_nodes(self) -> List[VizElement]:
         rooms_viz = []
-        room_nodes = self.egg.spatial_graph.get_all_room_nodes()
+        room_nodes = self.egg.spatial.get_all_room_nodes()
         room_pos = []
         for node in room_nodes.values():
             room_pos.append(node.position)
@@ -224,7 +223,7 @@ class EGGVisualizer:
     ) -> List[VizElement]:
         obj_viz = []
         for obj_node_id in event_node.involved_object_ids:
-            obj_node = self.egg.spatial_graph.get_object_node_by_id(obj_node_id)
+            obj_node = self.egg.spatial.get_object_node_by_id(obj_node_id)
             assert obj_node is not None
             _, obj_end = obj_node.get_closest_start_end_timestamps(
                 start_timestamp, end_timestamp
@@ -266,11 +265,11 @@ class EGGVisualizer:
         obj_viz = []
         non_involved_ids = [
             id
-            for id in list(self.egg.spatial_graph.get_all_object_nodes().keys())
+            for id in list(self.egg.spatial.get_all_object_nodes().keys())
             if id not in event_node.involved_object_ids
         ]
         for obj_node_id in non_involved_ids:
-            obj_node = self.egg.spatial_graph.get_object_node_by_id(obj_node_id)
+            obj_node = self.egg.spatial.get_object_node_by_id(obj_node_id)
             assert obj_node is not None
             if obj_node.has_been_seen(event_node.start):
                 prev_timestamp, prev_pos = obj_node.get_previous_timestamp_and_position(
@@ -279,11 +278,11 @@ class EGGVisualizer:
                 assert (
                     prev_pos is not None and prev_timestamp is not None
                 ), f"Node {obj_node.name} failed, timestamps {list(obj_node.timestamped_position.keys())} ref_timestamp {event_node.start}"
-                prev_event_node = self.egg.event_graph.get_event_node_by_timestamp(
+                prev_event_node = self.egg.events.get_event_node_by_timestamp(
                     prev_timestamp
                 )
                 assert prev_event_node is not None
-                prev_room_node = self.egg.spatial_graph.get_room_node_by_name(
+                prev_room_node = self.egg.spatial.get_room_node_by_name(
                     prev_event_node.location
                 )
                 assert prev_room_node is not None
@@ -317,7 +316,7 @@ class EGGVisualizer:
 
     def draw_event_node(self, event_id: int) -> List[VizElement]:
         event_viz = []
-        event_node = self.egg.event_graph.get_event_node_by_id(event_id)
+        event_node = self.egg.events.get_event_node_by_id(event_id)
         assert isinstance(event_node, EventNode)
         start_timestamp = event_node.start
         end_timestamp = event_node.end
@@ -332,7 +331,7 @@ class EGGVisualizer:
             quaternion=np.array(obs_odom["base_odom"][1])
         )[:3, :3]
 
-        room_node = self.egg.spatial_graph.get_room_node_by_name(event_node.location)
+        room_node = self.egg.spatial.get_room_node_by_name(event_node.location)
         assert room_node is not None
         room_node_viz_pos = room_node.position
         room_node_viz_pos[2] = self.room_offset
