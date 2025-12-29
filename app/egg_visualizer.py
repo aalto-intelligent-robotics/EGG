@@ -12,8 +12,8 @@ import open3d.visualization.rendering as rendering
 import argparse
 
 from egg.utils.visualizer import EGGVisualizer
-from egg.graph.spatial_graph import SpatialGraph
-from egg.graph.event_graph import EventGraph
+from egg.graph.spatial import SpatialComponents
+from egg.graph.event import EventComponents
 from egg.graph.egg import EGG
 
 PCD_COLOR = [0.2, 0.5, 0.7]
@@ -29,8 +29,8 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--file", default="./graph_gt.json")
     parser.add_argument("-p", "--pcd", default="/home/ros/data/map_cloud.pcd")
     args = parser.parse_args()
-    spatial_graph = SpatialGraph()
-    event_graph = EventGraph()
+    spatial_graph = SpatialComponents()
+    event_graph = EventComponents()
     egg = EGG(spatial_graph, event_graph)
     egg.deserialize(args.file)
     egg.gen_room_nodes()

@@ -170,8 +170,8 @@ class EventComponents:
                 event_attr["timestamped_observation_odom"].update(
                     {
                         str(timestamp_datetime): {
-                            "base_odom": list(pos["base_odom"]),
-                            "camera_odom": list(pos["camera_odom"]),
+                            "base_odom": [[round(p, 3) for p in pl] for pl in list(pos["base_odom"])],
+                            "camera_odom": [[round(p, 3) for p in pl] for pl in list(pos["camera_odom"])],
                         }
                     }
                 )

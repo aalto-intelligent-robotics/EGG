@@ -3,6 +3,7 @@ import sys
 from typing import Optional, Tuple
 import datetime
 import logging
+
 from egg.utils.language_utils import remove_explanation_and_convert
 
 from egg.pruning.egg_slicer import EGGSlicer
@@ -383,7 +384,7 @@ class QueryProcessor:
 
     def full_graph(self) -> str:
         """
-        Retrieves and processes the full graph, removing object involvement to focus on events.
+        Retrieves and processes the full graph.
 
         :returns: Response content from full graph processing.
         :rtype: str
@@ -392,8 +393,6 @@ class QueryProcessor:
         self.phase_1_prompt["content"] = self.phase_1_prompt["content"].format(
             full_graph=full_graph_data
         )
-        for event_id in full_graph_data["nodes"]["event_nodes"].keys():
-            full_graph_data["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
         response_content = self.agent.send_query(self.messages, count_tokens=True)

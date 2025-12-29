@@ -32,8 +32,9 @@ class LLMAgent:
                 logger.info(f"Using GPT4o-mini from {base_url}")
             else:
                 # base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4o-2024-11-20"
-                base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/gpt4o"
-                logger.info(f"Using GPT4o from {base_url}")
+                base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4.1-2025-04-14"
+                # base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/gpt4o"
+                logger.info(f"Using GPT4.1 from {base_url}")
             openai_endpoint_url = "/chat/completions"
         else:
             base_url = "https://aalto-openai-apigw.azure-api.net"

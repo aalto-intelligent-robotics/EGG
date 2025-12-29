@@ -9,8 +9,8 @@ from egg.eval.evaluator import EGGEvaluator
 from egg.pruning.egg_slicer import EGGSlicer
 from egg.pruning.query_processor import QueryProcessor
 from egg.eval.dataset import QADataset
-from egg.graph.spatial_graph import SpatialGraph
-from egg.graph.event_graph import EventGraph
+from egg.graph.spatial import SpatialComponents
+from egg.graph.event import EventComponents
 from egg.graph.egg import EGG, LLMAgent
 from egg.pruning.strategies import RetrievalStrategy
 from egg.utils.logger import getLogger
@@ -24,15 +24,15 @@ logger: logging.Logger = getLogger(
 )
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-s", "--strategy", type=str, default="full_unified")
+parser.add_argument("-s", "--strategy", type=str, default="pruning_unified")
 parser.add_argument("-a", "--auto", action="store_true")
 parser.add_argument("-u", "--unguided", action="store_true")
 parser.add_argument("-m", "--mini", action="store_true")
 parser.add_argument("-t", "--trial", type=int, default=1)
 args = parser.parse_args()
 
-spatial_graph = SpatialGraph()
-event_graph = EventGraph()
+spatial_graph = SpatialComponents()
+event_graph = EventComponents()
 egg = EGG(spatial_graph, event_graph)
 
 if not args.auto:

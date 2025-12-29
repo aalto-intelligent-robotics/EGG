@@ -262,7 +262,7 @@ class SpatialComponents:
             for timestamp, pos in object_node.timestamped_position.items():
                 timestamp_datetime = ns_to_datetime(timestamp)
                 attr_data["timestamped_position"].update(
-                    {str(timestamp_datetime): list(pos)}
+                    {str(timestamp_datetime): [round(p, 3) for p in list(pos)]}
                 )
 
             spatial_data.update({object_node.node_id: {"attributes": attr_data}})
