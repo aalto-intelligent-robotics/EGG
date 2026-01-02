@@ -21,7 +21,7 @@ class OllamaAgent(LLMAgent):
         **kwargs,
     ):
         super(OllamaAgent, self).__init__(*args, **kwargs)
-        self._model_name = "command-r"
+        self._model_name = model
         self._model = ChatOllama(
             model=self._model_name,
             temperature=self.temperature,
