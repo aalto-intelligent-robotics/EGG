@@ -245,7 +245,7 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_1_message()
-        phase_1_response_content = self.agent.send_query(
+        phase_1_response_content = self.agent.query(
             self.messages, count_tokens=True
         )
         assert phase_1_response_content is not None
@@ -311,7 +311,7 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_2_message()
-        phase_2_response_content = self.agent.send_query(
+        phase_2_response_content = self.agent.query(
             self.messages, count_tokens=True
         )
         assert phase_2_response_content is not None
@@ -375,7 +375,7 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_3_message(query=query, modality=modality)
-        phase_3_response_content = self.agent.send_query(
+        phase_3_response_content = self.agent.query(
             self.messages, count_tokens=True
         )
         assert phase_3_response_content is not None
@@ -395,7 +395,7 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.send_query(self.messages, count_tokens=True)
+        response_content = self.agent.query(self.messages, count_tokens=True)
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
@@ -416,7 +416,7 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.send_query(self.messages, count_tokens=True)
+        response_content = self.agent.query(self.messages, count_tokens=True)
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
@@ -439,7 +439,7 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.send_query(self.messages, count_tokens=True)
+        response_content = self.agent.query(self.messages, count_tokens=True)
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
@@ -461,7 +461,7 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.send_query(self.messages, count_tokens=True)
+        response_content = self.agent.query(self.messages, count_tokens=True)
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data

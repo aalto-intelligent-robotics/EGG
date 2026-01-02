@@ -25,8 +25,8 @@ The current time is {current_time}. You will be provided a query and a modality 
     - position: Return the answer in the form of a point in space, return the answer in the form of a 3D coordinate [x, y, z].
 
 In the first phase, you are provided with the locations the events occured in. From the query:
-- First, you need to select a time period to look for information. If no time period could be extracted from the query, return None.
-- Then, you need to select a list of locations to look for the information. If no location could be extracted from the query, return None.
+- First, you need to select a time period to look for information.
+- Then, you need to select a list of locations to look for the information.
 
 Return your answer from the initial phase in this JSON format:
 [

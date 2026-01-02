@@ -11,7 +11,8 @@ from egg.pruning.query_processor import QueryProcessor
 from egg.eval.dataset import QADataset
 from egg.graph.spatial import SpatialComponents
 from egg.graph.event import EventComponents
-from egg.graph.egg import EGG, LLMAgent
+from egg.graph.egg import EGG
+from egg.language.openai_agent import OpenaiAgent
 from egg.pruning.strategies import RetrievalStrategy
 from egg.utils.logger import getLogger
 from egg.utils.language_utils import get_eval_accuracy
@@ -48,7 +49,7 @@ egg.deserialize(json_file=graph_file)
 qa_file = "/home/ros/data/egg_qa.csv"
 qa_dataset = QADataset(qa_file=qa_file, egg=egg)
 
-llm_agent = LLMAgent(use_mini=args.mini)
+llm_agent = OpenaiAgent(use_mini=args.mini)
 
 evaluator = EGGEvaluator(dataset=qa_dataset, egg=egg, llm_agent=llm_agent)
 # logger.info(qa_dataset.pretty_str())

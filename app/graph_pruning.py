@@ -11,7 +11,8 @@ from egg.pruning.strategies import RetrievalStrategy
 from egg.utils.logger import getLogger
 from egg.pruning.egg_slicer import EGGSlicer
 from egg.pruning.query_processor import QueryProcessor
-from egg.language.llm import LLMAgent
+from egg.language.openai_agent import OpenaiAgent
+from egg.language.ollama_agent import OllamaAgent
 
 viz_elements = []
 
@@ -27,9 +28,6 @@ egg = EGG(spatial_graph, event_graph)
 
 egg.deserialize("./graph_gt.json")
 
-# egg.gen_captions(llm_agent=agent)
-# logger.info(egg.pretty_str())
-
 parser = argparse.ArgumentParser()
 parser.add_argument("-q", "--query", type=str)
 parser.add_argument("-m", "--modality", type=str)
@@ -39,7 +37,8 @@ args = parser.parse_args()
 current_time = datetime.datetime.now()
 query = args.query
 
-agent = LLMAgent(use_mini=args.mini)
+agent = OpenaiAgent(use_mini=args.mini, temperature=0)
+# agent = OllamaAgent(model="command-r", temperature=0)
 egg_slicer = EGGSlicer(egg=egg)
 processor = QueryProcessor(
     egg_slicer=egg_slicer,

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+i#!/usr/bin/env python3
 
 import glob
 import os
@@ -10,7 +10,7 @@ from egg.graph.spatial import SpatialComponents
 from egg.graph.event import EventComponents
 from egg.graph.egg import EGG, EventComponents, SpatialComponents
 from egg.utils.logger import getLogger
-from egg.language.llm import LLMAgent
+from egg.language.openai_agent import OpenaiAgent
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-a", "--auto", action="store_true")
@@ -62,7 +62,7 @@ for event_param_file in sorted(yaml_files):
 
 egg.gen_room_nodes()
 
-llm_agent = LLMAgent(use_mini=False)
+llm_agent = OpenaiAgent(use_mini=False)
 egg.gen_object_captions(llm_agent=llm_agent)
 
 logger.info(egg.pretty_str())

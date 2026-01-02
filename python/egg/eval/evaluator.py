@@ -41,7 +41,7 @@ class EGGEvaluator:
         eval_messages = build_evaluator_messages(
             query=qa_gt.query, gt_answer=str(qa_gt.answer), gen_answer=gen_answer
         )
-        eval_response = self.agent.send_query(
+        eval_response = self.agent.query(
             llm_message=eval_messages, count_tokens=False
         )
         self.eval_data.update(
