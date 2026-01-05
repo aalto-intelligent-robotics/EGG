@@ -29,7 +29,7 @@ class OllamaAgent(LLMAgent):
             temperature=self.temperature,
             num_ctx=num_ctx,
         )
-        logger.info(f"Using {self._model.model}")
+        logger.info(f"🧠 Using {self._model.model}")
 
     def query(self, llm_message: Sequence, count_tokens: bool = False) -> Optional[str]:
         with get_usage_metadata_callback() as cb:

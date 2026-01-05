@@ -3,7 +3,7 @@ import torch
 from torch import Tensor
 import numpy as np
 from numpy.typing import NDArray
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 import logging
 from transformers import logging as trf_logging
 
@@ -14,8 +14,9 @@ from egg.utils.image import xy_to_binary_mask
 from egg.language.prompts.video_captioning_prompts import (
     build_video_summary_caption_query,
     build_video_object_role_caption_query,
+    build_remembr_video_summary_query,
 )
-from egg.utils.read_data import get_event_data
+from egg.utils.read_data import get_event_data, get_image_odometry_data
 
 from egg.utils.logger import getLogger
 
@@ -41,6 +42,7 @@ class VLMAgent:
         self.model, self.processor, self.tokenizer = model_init(
             model_path, device_map={"": device}
         )
+        logger.info(f"👀 Using {model_path} VLM")
 
         assert self.model.generation_config is not None
         self.model.generation_config.top_k = None
@@ -150,3 +152,47 @@ class VLMAgent:
             )
             edge_captions.update({obj_name: caption})
         return (summary_caption, edge_captions)
+
+    def generate_remembr_data_from_yaml(
+        self,
+        yaml_param_file: str,
+    ) -> Tuple[str, Dict[int, Dict[str, List]]]:
+        event_data = get_event_data(yaml_param_file)
+
+        event_dir = os.path.dirname(os.path.abspath(yaml_param_file))
+        video_path = os.path.join(event_dir, event_data.get("clip_path"))
+
+        image_odometry_file = os.path.join(
+            event_dir, event_data.get("image_odometry_file")
+        )
+        timestamped_observation_odom, _, _, _ = (
+            get_image_odometry_data(
+                image_odometry_file=image_odometry_file,
+                from_frame=event_data.get("from_frame"),
+                to_frame=event_data.get("to_frame"),
+            )
+        )
+
+        frame_idx = 0
+
+        objects = []
+        for obj, _ in event_data.get("objects_of_interest").items():
+            objects.append(obj)
+        query = build_remembr_video_summary_query(objects=objects)
+        video_tensor = load_video(
+            video_path, fps=5, max_frames=768, frame_ids=[frame_idx]
+        )
+        _, video_height, video_width = video_tensor[0][0].shape
+        person_mask_np = xy_to_binary_mask(
+            width=video_width,
+            height=video_height,
+            xy_polygon=event_data.get("first_person_mask"),
+        )
+        masks = []
+        masks.append(person_mask_np)
+        masks = np.array(masks)
+        masks = torch.from_numpy(masks).to(torch.uint8)
+        summary_caption = self.generate_video_caption(
+            video_tensor=video_tensor, masks=masks, query=query
+        )
+        return summary_caption, timestamped_observation_odom
