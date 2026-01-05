@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 import datetime
 import logging
 
-from egg.utils.language_utils import remove_explanation_and_convert
+from egg.utils.language_utils import remove_code_blocks, remove_explanation_and_convert
 
 from egg.pruning.egg_slicer import EGGSlicer
 from egg.language.prompts.pruning_unified_prompts import (
@@ -35,6 +35,7 @@ from egg.language.prompts.no_edge_prompts import (
     NO_EDGE_SYSTEM_PROMPT,
     NO_EDGE_USER_PROMPT,
 )
+from egg.language.prompts.answer_templates import DEFAULT_NULL_ANSWER_TEMPLATE
 from egg.utils.timestamp import datetime_to_ns
 from egg.language.llm import LLMAgent
 from egg.utils.logger import getLogger
@@ -188,18 +189,31 @@ class QueryProcessor:
         ]:
 
             phase_1_response_content = self.phase_1()
-            phase_2_response_content = self.phase_2()
-            if self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED:
-                self.messages[0] = {
-                    "role": "system",
-                    "content": deepcopy(PRUNING_UNIFIED_SYSTEM_PROMPT),
-                }
-            elif self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE:
-                self.messages[0] = {
-                    "role": "system",
-                    "content": deepcopy(PRUNING_UNIFIED_NO_EDGE_SYSTEM_PROMPT),
-                }
-            phase_3_response_content = self.phase_3(query=query, modality=modality)
+            if self.egg_slicer.pruned_egg.is_empty():
+                logger.warning("Sliced EGG is empty after phase 1, returning None answer.")
+                phase_2_response_content = None
+                phase_3_response_content = DEFAULT_NULL_ANSWER_TEMPLATE.format(modality=modality)
+                
+            else:    
+                phase_2_response_content = self.phase_2()
+                
+                if self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED:
+                    self.messages[0] = {
+                        "role": "system",
+                        "content": deepcopy(PRUNING_UNIFIED_SYSTEM_PROMPT),
+                    }
+                elif self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE:
+                    self.messages[0] = {
+                        "role": "system",
+                        "content": deepcopy(PRUNING_UNIFIED_NO_EDGE_SYSTEM_PROMPT),
+                    }
+                    
+                if self.egg_slicer.pruned_egg.is_empty():
+                    logger.warning("Sliced EGG is empty after phase 2, returning None answer.")
+                    phase_3_response_content = DEFAULT_NULL_ANSWER_TEMPLATE.format(modality=modality)
+                else:
+                    phase_3_response_content = self.phase_3(query=query, modality=modality)
+
             return (
                 phase_1_response_content,
                 phase_2_response_content,
@@ -250,7 +264,8 @@ class QueryProcessor:
         )
         assert phase_1_response_content is not None
         logger.debug(phase_1_response_content)
-        phase_1_response_dict = remove_explanation_and_convert(phase_1_response_content)
+        phase_1_response_dict = remove_explanation_and_convert(remove_code_blocks(phase_1_response_content))
+        # print(phase_1_response_dict)
         assert phase_1_response_dict is not None
         if phase_1_response_dict[0]["start_year"] != 0:
             self.min_timestamp = datetime_to_ns(
@@ -316,7 +331,7 @@ class QueryProcessor:
         )
         assert phase_2_response_content is not None
         logger.debug(phase_2_response_content)
-        phase_2_response_dict = remove_explanation_and_convert(phase_2_response_content)
+        phase_2_response_dict = remove_explanation_and_convert(remove_code_blocks(phase_2_response_content))
         assert phase_2_response_dict is not None
         if self.retrieval_strategy in [
             RetrievalStrategy.PRUNING_UNIFIED,
@@ -347,18 +362,25 @@ class QueryProcessor:
         """
         self.messages = self.phase_3_prompt
         subgraph = self.egg_slicer.pruned_egg.serialize()
+
+        # Involved object ID set by edges, remove to avoid confusion
         for event_id in subgraph["nodes"]["event_nodes"].keys():
             subgraph["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
+
         logger.debug(f"Optimal subgraph: {self.egg_slicer.pruned_egg.pretty_str()}")
+        
         self.messages[0]["content"] = self.messages[0]["content"].format(
             current_time=self.current_time, query=query, modality=modality
         )
+        
+        # Remove edges for no_edge strategy
         if self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE:
             subgraph.pop("edges")
-            # for event_id in subgraph["nodes"]["event_nodes"].keys():
-            #     subgraph["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
+            
         self.serialized_optimal_subgraph = subgraph
+        
         logger.debug(f"Optimal subgraph serialized: {self.serialized_optimal_subgraph}")
+        
         self.messages[-1]["content"] = self.messages[-1]["content"].format(
             subgraph=self.serialized_optimal_subgraph
         )
@@ -378,8 +400,8 @@ class QueryProcessor:
         phase_3_response_content = self.agent.query(
             self.messages, count_tokens=True
         )
-        assert phase_3_response_content is not None
         logger.debug(phase_3_response_content)
+        assert phase_3_response_content is not None
         return phase_3_response_content
 
     def full_graph(self) -> str:

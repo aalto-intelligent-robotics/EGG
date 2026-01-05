@@ -29,6 +29,9 @@ class EventComponents:
         """
         self._event_nodes = event_nodes
 
+    def is_empty(self) -> bool:
+        return len(self._event_nodes) == 0
+
     def get_num_events(self):        
         """
         Returns the number of event nodes.

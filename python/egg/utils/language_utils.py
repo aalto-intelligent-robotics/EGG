@@ -13,6 +13,22 @@ logger: logging.Logger = getLogger(
     log_file="utils/language_utils.log",
 )
 
+def remove_code_blocks(text):
+    # Remove ```json and the corresponding closing ```
+        # Regular expression to match <think>...</think>
+    # return clean    # Find the position of the closing </think> tag
+    closing_think_tag_position = text.find('</think>')
+    
+    if closing_think_tag_position != -1:
+        # Extract everything after the closing </think> tag
+        json_text = text[closing_think_tag_position + len('</think>'):].strip()
+    else:
+        # If </think> is not found, return an empty string or original text
+        json_text = text
+        
+    json_text = re.sub(r'```json\s*', '', json_text)
+    json_text = re.sub(r'```\s*', '', json_text)
+    return json_text
 
 def remove_explanation_and_convert(json_string: str) -> Optional[Dict]:
     lines = json_string.splitlines()

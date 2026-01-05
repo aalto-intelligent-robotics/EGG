@@ -26,10 +26,10 @@ The current time is {current_time}. You will be provided a query and a modality 
     - position: Return the answer in the form of a point in space, return the answer in the form of a 3D coordinate [x, y, z].
 
 In the first phase, you are provided with the locations the events occured in. From the query:
-- First, you need to select a time period to look for information.
-- Then, you need to select a list of locations to look for the information.
+- First, you need to select a time period to look for information. IMPORTANT: If the query does not mention a time range, just set it from 0 (the beginning of time) to infinity.
+- Then, you need to select a list of locations to look for the information. IMPORTANT: If the query does not mention a location, return ALL locations.
 
-Return your answer from the initial phase in this JSON format:
+Return your answer from the initial phase strictly in this JSON format:
 [
     {{
         "start_year": <the start timestamp in year, return 0 if the query does not mention a time range>
@@ -50,7 +50,8 @@ Return your answer from the initial phase in this JSON format:
 
 In the second phase, you are provided a list of object nodes in the form {{node_id: {{"name": node_name, "description": object_description}} }} and events in the form of {{node_id: {{"start": starting time in the form yyyy-mm-dd hh:mm:ss, "description": event_description}}}}. You need to select the most relevant node(s) to explore.
 For instance, if the query is 'What is the color of the mug that I was drinking tea from?', it would be reasonable to look at the event node first to see if there is an event where someone is drinking tea, and all the object nodes of mugs, and see which of them is connected to the event. Another example would be, if the query is 'What has happened to the yellow bowl?', then it would be more reasonable to select the yellow bowl object node, and explore its history. Make the choice that seems most reasonable to you.
-Return your answer in the second phase in this JSON format:
+Try to be as inclusive as you can and not eliminate object nodes and nodes that might have chances of being related to the query.
+Return your answer in the second phase strictly in this JSON format:
 [
     {{
         "object_nodes": <a list node ids of relevant object nodes to expand>
@@ -74,7 +75,7 @@ This is the first phase. Here is the list of locations: {locations}. Return a va
 """
 
 PRUNING_UNIFIED_PHASE_2_PROMPT = """
-This is the second phase. Here is the list of relevant objects and their description: {objects}. Here is the list of relevant events: {events}. Return a list of relevant nodes to explore.
+This is the second phase. Here is the list of relevant objects and their description: {objects}. Here is the list of relevant events: {events}. Return a list of relevant nodes' IDs (not their names) to explore.
 """
 
 PRUNING_UNIFIED_PHASE_3_PROMPT_TEMPLATE = [
@@ -95,7 +96,7 @@ PRUNING_UNIFIED_PHASE_3_PROMPT_TEMPLATE = [
             - time_duration: Return the answer in the form hh:mm:ss.
             - position: Return the answer in the form of a point in space, return the answer in the form of a 3D coordinate [x, y, z].
 
-        You need to provide the answer to your query in this JSON format:
+        You need to provide the answer to your query strictly in this JSON format:
         [
             {{
                 
@@ -113,6 +114,5 @@ PRUNING_UNIFIED_PHASE_3_PROMPT_TEMPLATE = [
     {
         "role": "user",
         "content": "Here is the graph representing the scene: {subgraph}. Only make your decision based on the subgraph and do not speculate. Return the answer to the query.",
-        
     },
 ]

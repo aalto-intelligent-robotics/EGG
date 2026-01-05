@@ -37,8 +37,8 @@ args = parser.parse_args()
 current_time = datetime.datetime.now()
 query = args.query
 
-agent = OpenaiAgent(use_mini=args.mini, temperature=0)
-# agent = OllamaAgent(model="command-r", temperature=0)
+# agent = OpenaiAgent(use_mini=args.mini, temperature=0)
+agent = OllamaAgent(model="command-r", temperature=0)
 egg_slicer = EGGSlicer(egg=egg)
 processor = QueryProcessor(
     egg_slicer=egg_slicer,

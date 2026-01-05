@@ -7,7 +7,7 @@ logger: logging.Logger = getLogger(
     name=__name__,
     consoleLevel=logging.INFO,
     fileLevel=logging.DEBUG,
-    log_file="language/prompts/pruning_unified_prompts.log",
+    log_file="language/prompts/pruning_unified_no_edge_prompts.log",
 )
 
 PRUNING_UNIFIED_NO_EDGE_SYSTEM_PROMPT = """
@@ -25,8 +25,8 @@ The current time is {current_time}. You will be provided a query and a modality 
     - position: Return the answer in the form of a point in space, return the answer in the form of a 3D coordinate [x, y, z].
 
 In the first phase, you are provided with the locations the events occured in. From the query:
-- First, you need to select a time period to look for information.
-- Then, you need to select a list of locations to look for the information.
+- First, you need to select a time period to look for information. IMPORTANT: If the query does not mention a time range, just set it from 0 (the beginning of time) to infinity.
+- Then, you need to select a list of locations to look for the information. IMPORTANT: If the query does not mention a location, return ALL locations.
 
 Return your answer from the initial phase in this JSON format:
 [
@@ -49,6 +49,7 @@ Return your answer from the initial phase in this JSON format:
 
 In the second phase, you are provided a list of object nodes in the form {{node_id: {{"name": node_name, "description": object_description}} }} and events in the form of {{node_id: {{"start": starting time in the form yyyy-mm-dd hh:mm:ss, "description": event_description}}}}. You need to select the most relevant node(s) to explore.
 For instance, if the query is 'What is the color of the mug that I was drinking tea from?', it would be reasonable to look at the event node first to see if there is an event where someone is drinking tea, and all the object nodes of mugs, and see which of them is connected to the event. Another example would be, if the query is 'What has happened to the yellow bowl?', then it would be more reasonable to select the yellow bowl object node, and explore its history. Make the choice that seems most reasonable to you.
+Try to be as inclusive as you can and not eliminate object nodes and nodes that might have chances of being related to the query.
 Return your answer in the second phase in this JSON format:
 [
     {{

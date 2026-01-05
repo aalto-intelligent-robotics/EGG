@@ -41,6 +41,9 @@ class SpatialComponents:
         self._map_views = map_views
         self._room_nodes = room_nodes
 
+    def is_empty(self) -> bool:
+        return len(self._object_nodes) == 0
+
     def is_new_node(
         self, new_object_node: ObjectNode, use_gt_id: bool
     ) -> Tuple[bool, int]:

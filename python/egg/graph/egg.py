@@ -81,6 +81,9 @@ class EGG:
             self.vlm_agent = VLMAgent(do_sample=do_sample, device=device)
             self.use_guided_auto_caption: bool = use_guided_auto_caption
 
+    def is_empty(self) -> bool:
+        return (self.spatial.is_empty() and self.events.is_empty())
+
     def set_spatial_components(self, spatial_components: SpatialComponents):
         """
         Updates the spatial component of EGG.

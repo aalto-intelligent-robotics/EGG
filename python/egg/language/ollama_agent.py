@@ -17,7 +17,9 @@ logger: logging.Logger = getLogger(
 class OllamaAgent(LLMAgent):
     def __init__(
         self,
-        model: str = "command-r", *args,
+        model: str = "command-r",
+        num_ctx: int = 128000,
+        *args,
         **kwargs,
     ):
         super(OllamaAgent, self).__init__(*args, **kwargs)
@@ -25,6 +27,7 @@ class OllamaAgent(LLMAgent):
         self._model = ChatOllama(
             model=self._model_name,
             temperature=self.temperature,
+            num_ctx=num_ctx,
         )
         logger.info(f"Using {self._model.model}")
 
