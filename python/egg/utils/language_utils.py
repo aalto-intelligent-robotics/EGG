@@ -53,3 +53,10 @@ def get_eval_accuracy(json_string: str) -> float:
         "accuracy" in eval_data.keys()
     ), f"Invalid eval data: {eval_data}. 'accuracy' key missing"
     return float(eval_data["accuracy"])
+
+def get_gen_answer(json_string: str) -> str:
+    gen_data = remove_explanation_and_convert(json_string)[0]
+    assert (
+        "gen_answer" in gen_data.keys()
+    ), f"Invalid eval data: {gen_data}. 'gen_answer' key missing"
+    return gen_data["gen_answer"]

@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-import os
 import logging
-import numpy as np
 import argparse
+import pickle
 
-from egg.eval.evaluator import EGGEvaluator
 from egg.pruning.egg_slicer import EGGSlicer
 from egg.pruning.query_processor import QueryProcessor
 from egg.eval.dataset import QADataset
@@ -16,13 +14,12 @@ from egg.language.openai_agent import OpenaiAgent
 from egg.language.ollama_agent import OllamaAgent
 from egg.pruning.strategies import RetrievalStrategy
 from egg.utils.logger import getLogger
-from egg.utils.language_utils import get_eval_accuracy
 
 logger: logging.Logger = getLogger(
     name=__name__,
     consoleLevel=logging.INFO,
     fileLevel=logging.DEBUG,
-    log_file="app/eval.log",
+    log_file="app/run_benchmark.log",
 )
 
 parser = argparse.ArgumentParser()
@@ -56,8 +53,6 @@ if "gpt" in args.model:
 else:
     llm_agent = OllamaAgent(model=args.model)
 
-evaluator = EGGEvaluator(llm_agent=llm_agent)
-
 if args.strategy.lower() == "full_unified":
     strategy = RetrievalStrategy.FULL_UNIFIED
 elif args.strategy.lower() == "pruning_unified":
@@ -76,8 +71,10 @@ else:
     )
 
 egg_slicer = EGGSlicer(egg=egg)
+current_time = "30 August 2025 23:59:59"
 processor = QueryProcessor(
     egg_slicer=egg_slicer,
+    current_time=current_time,
     llm_agent=llm_agent,
     retrieval_strategy=strategy,
 )
@@ -86,30 +83,22 @@ accuracy = []
 logger.info(f"graph file used: {graph_file}")
 logger.info(f"Auto: {args.auto}")
 logger.info(f"Strategy: {args.strategy.lower()}")
-for qa_gt in qa_dataset.qa_ground_truth_list:
+benchmark_data = {}
+for id, qa_gt in enumerate(qa_dataset.qa_ground_truth_list):
     _, _, gen_answer = processor.process_query(qa_gt.query, qa_gt.modality.name.lower())
-
-    eval_response = evaluator.eval_qa(
-        qa_gt=qa_gt,
-        gen_answer=gen_answer,
-        optimal_subgraph=processor.serialized_optimal_subgraph,
-    )
-    logger.debug(
-        f"Eval Response: {eval_response}\n"
-        + f"Query: {qa_gt.query}\n"
-        + f"GT Answer: {qa_gt.answer}\n"
-        + f"Gen answer: {gen_answer}\n"
-    )
-    accuracy.append(get_eval_accuracy(eval_response))
-
-mean_accuracy = np.mean(accuracy)
-logger.info(f"Mean Accuracy: {mean_accuracy}")
+    gen_data = {
+        "query": qa_gt.query,
+        "modality": qa_gt.modality,
+        "gt_answer": qa_gt.answer,
+        "gen_answer": gen_answer,
+        "optimal_subgraph": processor.serialized_optimal_subgraph,
+    }
+    benchmark_data.update({id: gen_data})
 total_input_tokens, total_output_tokens = processor.get_used_tokens()
 logger.info(f"Input tokens: {total_input_tokens}")
 logger.info(f"Output tokens: {total_output_tokens}")
 logger.info(f"Total tokens: {total_input_tokens + total_output_tokens}")
 
-os.makedirs(f"trial_{args.trial}", exist_ok=True)
-evaluator.save_eval_data(
-    f"trial_{args.trial}/eval_{args.strategy.lower()}_autocaption_{args.auto}_guided_{not args.unguided}_trial_{args.trial}.json"
-)
+with open(f"trial_{args.trial}/eval_{args.strategy.lower()}_model_{args.model}_autocaption_{args.auto}_guided_{not args.unguided}_trial_{args.trial}.pkl", "wb") as f:
+    pickle.dump(benchmark_data, f)
+    f.close()

@@ -1,12 +1,13 @@
 import logging
-from typing import Dict
+from typing import Dict, List, Optional
 import json
+from ast import literal_eval
+from datetime import datetime
 
-from egg.eval.dataset import QADataset
-from egg.eval.qa_ground_truth import QAGroundTruth
+from egg.eval.qa_ground_truth import Modality, QAGroundTruth
 from egg.graph.egg import EGG
 from egg.utils.logger import getLogger
-from egg.utils.language_utils import get_eval_accuracy
+from egg.utils.language_utils import get_eval_accuracy, get_gen_answer
 from egg.language.llm import LLMAgent
 from egg.language.prompts.evaluator_prompts import build_evaluator_messages
 
@@ -18,13 +19,22 @@ logger: logging.Logger = getLogger(
     log_file="eval/evaluator.log",
 )
 
+def compute_f1_score_nodes(gt: List, pred: List) -> float:
+    gt_set = set(gt)
+    pred_set = set(pred)
+    correct_guesses = gt_set.intersection(pred_set)
+    precision = len(correct_guesses) / len(pred_set) if pred_set else 0
+    recall = len(correct_guesses) / len(gt_set) if gt_set else 0
+    if precision + recall > 0:
+        f1_score = 2 * (precision * recall) / (precision + recall)
+    else:
+        f1_score = 0
+    return f1_score
 
 class EGGEvaluator:
     def __init__(
-        self, dataset: QADataset, egg: EGG, llm_agent: LLMAgent, eval_data: Dict = {}
+        self, llm_agent: LLMAgent, eval_data: Dict = {}
     ):
-        self.dataset = dataset
-        self.egg = egg
         self.agent = llm_agent
         self.eval_data = eval_data
         self._qa_id = 0
@@ -37,27 +47,61 @@ class EGGEvaluator:
         self._qa_id += 1
         return self._qa_id
 
-    def eval_qa(self, qa_gt: QAGroundTruth, gen_answer: str, optimal_subgraph: Dict) -> str:
-        eval_messages = build_evaluator_messages(
-            query=qa_gt.query, gt_answer=str(qa_gt.answer), gen_answer=gen_answer
-        )
-        eval_response = self.agent.query(
-            llm_message=eval_messages, count_tokens=False
-        )
+    def eval_qa(self, qa_gt: QAGroundTruth, gen_answer: str, optimal_subgraph: Optional[Dict]) -> str:
+        eval_response = None
+        accuracy = 0.0
+        if qa_gt.modality in [ Modality.TEXT, "text" ]:
+            # If text, use llm to judge
+            eval_messages = build_evaluator_messages(
+                query=qa_gt.query, gt_answer=str(qa_gt.answer), gen_answer=gen_answer
+            )
+            eval_response = self.agent.query(
+                llm_message=eval_messages, count_tokens=False
+            )
+            accuracy = get_eval_accuracy(str(eval_response))
+        elif qa_gt.modality in [Modality.BINARY, "binary"]:
+            if gen_answer == "yes":
+                gen_answer = "1"
+            elif gen_answer == "no":
+                gen_answer = "0"
+            else:
+                logger.error(f"Invalid binary answer: {gen_answer}")
+                raise NotImplementedError
+            accuracy = 1.0 if int(qa_gt.answer) == int(gen_answer) else 0.0
+        elif qa_gt.modality in [Modality.NODE, "node"]:
+            gen_answer = literal_eval(gen_answer)
+            assert isinstance(qa_gt.answer, List)
+            accuracy = compute_f1_score_nodes(gt=qa_gt.answer, pred=gen_answer)
+            logger.info(f"Nodes GT {qa_gt.answer}")
+            logger.info(f"Nodes pred: {gen_answer}")
+            logger.info(f"F1-score is {accuracy}")
+        elif qa_gt.modality in [Modality.TIME_POINT, "time_point"]:
+            try:
+                gen_time = datetime.strptime(gen_answer, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                # To deal with ReMEmbR not returning the date
+                gen_time = datetime.strptime(f"2025-08-30 {gen_answer}", "%Y-%m-%d %H:%M:%S")
+            gt_answer = datetime.strptime(str(qa_gt.answer), "%Y-%m-%d %H:%M:%S")
+            time_diff = abs((gen_time - gt_answer).total_seconds() / 60.0)
+            logger.debug(f"Time diff is {time_diff}")
+            accuracy = 1.0 if time_diff < 2.0 else 0.0
+        else:
+            logger.error(f"Invalid modality: {qa_gt.modality}")
+            raise NotImplementedError
         self.eval_data.update(
             {
                 self.get_id(): {
                     "query": qa_gt.query,
                     "gt_answer": qa_gt.answer,
-                    "modality": qa_gt.modality.name.lower(),
+                    "modality": qa_gt.modality.name.lower() if isinstance(qa_gt.modality, Modality) else qa_gt.modality,
                     "gen_answer": gen_answer,
                     "eval_response": str(eval_response),
-                    "accuracy": get_eval_accuracy(str(eval_response)),
+                    "accuracy": accuracy,
                     "optimal_subgraph": optimal_subgraph,
                 }
             }
         )
-        return str(eval_response)
+        return eval_response, accuracy
 
     def save_eval_data(self, output_file: str):
         with open(output_file, "w") as fp:

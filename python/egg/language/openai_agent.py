@@ -21,7 +21,7 @@ class OpenaiAgent(LLMAgent):
     def __init__(
         self,
         use_gpt4: bool = True,
-        use_mini: bool = True,
+        use_mini: bool = False,
         *args,
         **kwargs,
     ):
@@ -29,15 +29,16 @@ class OpenaiAgent(LLMAgent):
         if use_gpt4:
             if use_mini:
                 base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4o-mini-2024-07-18"
-                logger.info(f"🧠Using GPT4o-mini from {base_url}")
+                logger.info(f"🧠 Using GPT4o-mini from {base_url}")
             else:
-                base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4.1-2025-04-14"
-                logger.info(f"🧠Using GPT4.1 from {base_url}")
+                base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/gpt4o"
+                # base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4.1-2025-04-14"
+                logger.info(f"🧠 Using GPT4 from {base_url}")
             openai_endpoint_url = "/chat/completions"
         else:
             base_url = "https://aalto-openai-apigw.azure-api.net"
             openai_endpoint_url = "/v1/chat/gpt-35-turbo-1106"
-            logger.info(f"🧠Using GPT3.5")
+            logger.info(f"🧠 Using GPT3.5")
 
         # Set API key in terminal: export AALTO_OPENAI_API_KEY=""
         api_key = os.environ.get("AALTO_OPENAI_API_KEY")

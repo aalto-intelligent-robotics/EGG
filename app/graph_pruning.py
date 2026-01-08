@@ -32,17 +32,23 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-q", "--query", type=str)
 parser.add_argument("-m", "--modality", type=str)
 parser.add_argument("--mini", action="store_true")
+parser.add_argument("--model", type=str, default="gpt4")
 args = parser.parse_args()
 
-current_time = datetime.datetime.now()
+current_time = "30th August 2025 23:59:00"
+# current_time = str(datetime.datetime.now())
 query = args.query
 
-# agent = OpenaiAgent(use_mini=args.mini, temperature=0)
-agent = OllamaAgent(model="command-r", temperature=0)
+if "gpt" in args.model:
+    llm_agent = OpenaiAgent(use_mini=args.mini)
+else:
+    llm_agent = OllamaAgent(model=args.model)
+
 egg_slicer = EGGSlicer(egg=egg)
 processor = QueryProcessor(
     egg_slicer=egg_slicer,
-    llm_agent=agent,
+    current_time=current_time,
+    llm_agent=llm_agent,
     retrieval_strategy=RetrievalStrategy.PRUNING_UNIFIED,
 )
 phase_1_response, phase_2_response, phase_3_response = processor.process_query(

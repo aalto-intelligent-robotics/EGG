@@ -17,13 +17,23 @@ logger: logging.Logger = getLogger(
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--modality", type=str, default="all")
-parser.add_argument("-f", "--file", type=str, default="./eval_pruning_unified_autocaption_False_guided_True.json")
+parser.add_argument("-r", "--results-file", type=str)
+parser.add_argument("-g", "--graph-file", type=str, default="./graph_gt.json")
 args = parser.parse_args()
 
-with open("./graph_gt.json") as fp:
+with open(args.graph_file) as fp:
     full_graph = json.load(fp)
 
-analyzer = EGGAnalyzer(args.file)
+# NOTE: Involved object ID set by edges, remove to avoid confusion.
+# Remove timestamped positions to reduce token usage. Not used in this evaluation
+# For applicactions involving locations, add them back (e.g. object navigation)
+for event_id in full_graph["nodes"]["event_nodes"].keys():
+    full_graph["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
+    full_graph["nodes"]["event_nodes"][event_id].pop("timestamped_observation_odom")
+for object_id in full_graph["nodes"]["object_nodes"].keys():
+    full_graph["nodes"]["object_nodes"][object_id]["attributes"].pop("timestamped_position")
+
+analyzer = EGGAnalyzer(args.results_file)
 if args.modality == "failure":
     failure_data = analyzer.get_failure_eval_data()
     for id, eval_sample in failure_data.items():
