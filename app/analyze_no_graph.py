@@ -32,7 +32,7 @@ if args.modality == "failure":
             + f"Eval Response: {eval_sample['eval_response']}\n"
         )
 else:
-    for m in ["text", "binary", "node", "time", "all"]:
+    for m in ["text", "binary", "time", "all"]:
         modality_data = analyzer.get_eval_data_by_modality(modality=m)
         accuracy_list = []
         compression_list = []

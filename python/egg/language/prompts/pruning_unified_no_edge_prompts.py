@@ -16,19 +16,19 @@ The environment is structured as a graph, with nodes. The structure is as follow
 - 'nodes': includes 'object_nodes' and 'event_nodes'. Each node is identified by a UNIQUE node_id. The 'object_nodes' represent the objects within the scene, each has a UNIQUE given name. Each 'object_node' is characterized by a set of attributes, which includes the 'caption' which describes what the object looks like. We assume that all objects in the environment are unique. The 'event nodes' represent the observed events in the scene, containing the 'event_description', which is a caption of the overall observed event.
 
 The current time is {current_time}. You will be provided a query and a modality to return your answer in. The available modalities are:
-    - node: return the list of node names of the object nodes that responds to the query. e.g., ["bowl_1", "mug_2", "faucet_0"]. Your answer could contain only one or multiple node names.
+    - node: return the list of node names of the object nodes that responds to the query. Your answer could contain only one node (e.g., ["mug_0"]) or multiple node names (e.g., ["bowl_1", "mug_2", "faucet_0"]).
     - text: Return the answer in natural language responding to the query.
-    - binary: Return either True or False.
+    - binary: Return either "True" or "False" (remember to put the double quotes).
     - time_point: Return the answer in the form of a point in time return the timestamp in the format yyyy-mm-dd hh:mm:ss
     - time_interval: Return the answer in the form of a time interval, return in the form yyyy-mm-dd hh:mm:ss - yyyy-mm-dd hh:mm:ss (start timestamp - end timestamp)
     - time_duration: Return the answer in the form hh:mm:ss.
     - position: Return the answer in the form of a point in space, return the answer in the form of a 3D coordinate [x, y, z].
 
 In the first phase, you are provided with the locations the events occured in. From the query:
-- First, you need to select a time period to look for information. IMPORTANT: If the query does not mention a time range, set the date and time from 0 (the beginning of time) to infinity.
+- First, you need to select a time period to look for information. IMPORTANT: If the query does not mention a time range, set the date and time from 0 (the beginning of time) to the current time.
 - Then, you need to select a list of locations to look for the information. IMPORTANT: If the query does not mention a location, return ALL locations.
 
-Return your answer from the initial phase in this JSON format:
+Return your answer from the initial phase strictly in this JSON format:
 [
     {{
         "start_year": <the start timestamp in year, return 0 if the query does not mention a time range>
@@ -36,11 +36,11 @@ Return your answer from the initial phase in this JSON format:
         "start_day": <the start timestamp in day, return 0 if the query does not mention a time range>
         "start_hour": <the start timestamp in hour, defaults to 0 if the query does not mention a time range>
         "start_minute": <the start timestamp in minute, defaults to 0 if the query does not mention a time range>
-        "end_year": <the end timestamp in year, return "inf" if the query does not mention a time range>
-        "end_month": <the end timestamp in month, return "inf" if the query does not mention a time range>
-        "end_day": <the end timestamp in day, return "inf" if the query does not mention a time range>
-        "end_hour": <the end timestamp in hour, defaults to 23 if the query does not mention a time range>
-        "end_minute": <the end timestamp in minute, defaults to 59 if the query does not mention a time range>
+        "end_year": <the end timestamp in year, return the curent year if the query does not mention a time range>
+        "end_month": <the end timestamp in month, return the current month if the query does not mention a time range>
+        "end_day": <the end timestamp in day, return the current date if the query does not mention a time range>
+        "end_hour": <the end timestamp in hour, defaults to the current time if the query does not mention a time range>
+        "end_minute": <the end timestamp in minute, defaults to the current minute if the query does not mention a time range>
         "explanation_time": <explanation for the selection of the time range>
         "locations": <the list of locations to look for the nodes, return all locations if the query does not mention any locations>
         "explanation_locations": <explanation for the selection of the locations>
@@ -86,9 +86,9 @@ PRUNING_UNIFIED_NO_EDGE_PHASE_3_PROMPT_TEMPLATE = [
         - 'nodes': includes 'object_nodes' and 'event_nodes'. Each node is identified by a UNIQUE node_id. The 'object_nodes' represent the objects within the scene, each has a UNIQUE given name. Each 'object_node' is characterized by a set of attributes, which includes the 'caption' which describes what the object looks like. We assume that all objects in the environment are unique. The 'event nodes' represent the observed events in the scene, containing the 'event_description', which is a caption of the overall observed event. Each 'event_node' is also characterized by the involved objects, which is denoted by the ids. 'Involved' objects means they are used directly used within the observed event.
 
         The current time is {current_time}. You will be provided a query and a modality to return your answer in. The available modalities are:
-            - node: return the list of node names of the object nodes that responds to the query. e.g., ["bowl_1", "mug_2", "faucet_0"]. Your answer could contain only one or multiple node names.
+            - node: return the list of node names of the object nodes that responds to the query. Your answer could contain only one node (e.g., ["mug_0"]) or multiple node names (e.g., ["bowl_1", "mug_2", "faucet_0"]).
             - text: Return the answer in natural language responding to the query.
-            - binary: Return either True or False.
+            - binary: Return either "True" or "False" (remember to put the double quotes).
             - time_point: Return the answer in the form of a point in time return the timestamp in the format yyyy-mm-dd hh:mm:ss
             - time_interval: Return the answer in the form of a time interval, return in the form yyyy-mm-dd hh:mm:ss - yyyy-mm-dd hh:mm:ss (start timestamp - end timestamp)
             - time_duration: Return the answer in the form hh:mm:ss.
@@ -98,7 +98,7 @@ PRUNING_UNIFIED_NO_EDGE_PHASE_3_PROMPT_TEMPLATE = [
         [
             {{
                 
-                "answer": <The final answer to the query. Note that the graph does not always contain enough information to answer the query. If the graph does not contain enough information, answer None>
+                "answer": <The final answer to the query. Note that the graph does not always contain enough information to answer the query. If the graph does not contain enough information, answer "None">
                 "modality": <The modality that the answer is returned in strictly based on the tag at the beginning of the query.>
                 "confidence": <How confident you are on the answer, from 0-1, 0 being you have no clue how to answer, and 1 being absolutely confident in the answer. Furthermore, if the events that help you generate this answer is far away from the current time, decrease the confidence>
                 "explanation": <The explanation to the answer. Clearly state which object nodes, event nodes are involved with their node ID if you use them to generate the answer.>

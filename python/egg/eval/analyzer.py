@@ -24,8 +24,9 @@ class EGGAnalyzer:
     def get_failure_eval_data(self):
         failure_data = {}
         for q_id, qa_data in self.eval_data.items():
-            if qa_data["accuracy"] != 1:
-                failure_data.update({q_id: qa_data})
+            if q_id != "usage_metadata":
+                if qa_data["accuracy"] != 1:
+                    failure_data.update({q_id: qa_data})
         return failure_data
 
     def get_eval_data_by_modality(self, modality: str):
@@ -40,6 +41,7 @@ class EGGAnalyzer:
         else:
             modality_list = [modality]
         for q_id, qa_data in self.eval_data.items():
-            if qa_data["modality"] in modality_list:
-                eval_data_by_modality.update({q_id: qa_data})
+            if q_id != "usage_metadata":
+                if qa_data["modality"] in modality_list:
+                    eval_data_by_modality.update({q_id: qa_data})
         return eval_data_by_modality

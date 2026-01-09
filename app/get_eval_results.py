@@ -3,6 +3,7 @@
 import numpy as np
 from typing import Dict
 import json
+import pickle
 import logging
 import argparse
 
@@ -42,6 +43,8 @@ for result in benchmark_data.values():
         qa_gt=qa_gt,
         gen_answer=result["gen_answer"],
         optimal_subgraph=optimal_subgraph,
+        input_tokens=result["input_tokens"],
+        output_tokens=result["output_tokens"],
     )
     accuracy_list.append(accuracy)
 mean_accuracy = np.mean(accuracy_list)

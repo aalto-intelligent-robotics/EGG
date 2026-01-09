@@ -1,5 +1,5 @@
 import os
-from typing import Sequence, Optional
+from typing import Sequence, Optional, Tuple
 import httpx
 from openai import OpenAI
 import tiktoken
@@ -64,7 +64,9 @@ class OpenaiAgent(LLMAgent):
             http_client=httpx.Client(event_hooks={"request": [update_base_url]}),
         )
 
-    def query(self, llm_message: Sequence, count_tokens: bool = False) -> Optional[str]:
+    def query(
+        self, llm_message: Sequence, count_tokens: bool = False
+    ) -> Tuple[Optional[str], int, int]:
         # Send query
         completion = self._model.chat.completions.create(
             model="no_effect",  # the model variable must be set, but has no effect, model selection done with URL
@@ -74,14 +76,15 @@ class OpenaiAgent(LLMAgent):
         # Get Content of the response
         response_content = completion.choices[0].message.content
         if response_content is None:
-            return response_content
+            return response_content, 0, 0
 
         # Count tokens
         encoding_name = "cl100k_base"  # For GPT-3.5-turbo-1106 and GPT-4o
         encoding = tiktoken.get_encoding(encoding_name)
 
+        input_tokens = 0
+        output_tokens = 0
         if count_tokens:
-            input_tokens = 0
             for message in llm_message:
                 input_tokens += len(encoding.encode(message["content"]))
 
@@ -90,4 +93,4 @@ class OpenaiAgent(LLMAgent):
             self.total_input_tokens += input_tokens
             self.total_output_tokens += output_tokens
 
-        return response_content
+        return response_content, input_tokens, output_tokens

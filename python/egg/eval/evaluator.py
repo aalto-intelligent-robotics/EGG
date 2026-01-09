@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import json
 from ast import literal_eval
 from datetime import datetime
@@ -7,9 +7,10 @@ from datetime import datetime
 from egg.eval.qa_ground_truth import Modality, QAGroundTruth
 from egg.graph.egg import EGG
 from egg.utils.logger import getLogger
-from egg.utils.language_utils import get_eval_accuracy, get_gen_answer
+from egg.utils.language_utils import get_eval_accuracy
 from egg.language.llm import LLMAgent
 from egg.language.prompts.evaluator_prompts import build_evaluator_messages
+from torch import Value
 
 
 logger: logging.Logger = getLogger(
@@ -18,6 +19,7 @@ logger: logging.Logger = getLogger(
     fileLevel=logging.DEBUG,
     log_file="eval/evaluator.log",
 )
+
 
 def compute_f1_score_nodes(gt: List, pred: List) -> float:
     gt_set = set(gt)
@@ -31,10 +33,9 @@ def compute_f1_score_nodes(gt: List, pred: List) -> float:
         f1_score = 0
     return f1_score
 
+
 class EGGEvaluator:
-    def __init__(
-        self, llm_agent: LLMAgent, eval_data: Dict = {}
-    ):
+    def __init__(self, llm_agent: LLMAgent, eval_data: Dict = {}):
         self.agent = llm_agent
         self.eval_data = eval_data
         self._qa_id = 0
@@ -47,44 +48,66 @@ class EGGEvaluator:
         self._qa_id += 1
         return self._qa_id
 
-    def eval_qa(self, qa_gt: QAGroundTruth, gen_answer: str, optimal_subgraph: Optional[Dict]) -> str:
-        eval_response = None
+    def eval_qa(
+        self,
+        qa_gt: QAGroundTruth,
+        gen_answer: str,
+        optimal_subgraph: Optional[Dict],
+        input_tokens: int,
+        output_tokens: int,
+    ) -> Tuple[str, float]:
+        eval_response = "None"
         accuracy = 0.0
-        if qa_gt.modality in [ Modality.TEXT, "text" ]:
+        if qa_gt.modality in [Modality.TEXT, "text"]:
             # If text, use llm to judge
             eval_messages = build_evaluator_messages(
                 query=qa_gt.query, gt_answer=str(qa_gt.answer), gen_answer=gen_answer
             )
-            eval_response = self.agent.query(
+            eval_response, _, _ = self.agent.query(
                 llm_message=eval_messages, count_tokens=False
             )
-            accuracy = get_eval_accuracy(str(eval_response))
+            eval_response = str(eval_response)
+            accuracy = get_eval_accuracy(eval_response)
         elif qa_gt.modality in [Modality.BINARY, "binary"]:
-            if gen_answer == "yes":
+            if str(gen_answer).lower() in ["yes", "true"]:
                 gen_answer = "1"
-            elif gen_answer == "no":
+            elif (gen_answer).lower() in ["no", "false"]:
                 gen_answer = "0"
             else:
                 logger.error(f"Invalid binary answer: {gen_answer}")
                 raise NotImplementedError
+            assert isinstance(
+                qa_gt.answer, bool
+            ), f"GT answer for modality binary must be bool but got {qa_gt.answer}"
             accuracy = 1.0 if int(qa_gt.answer) == int(gen_answer) else 0.0
         elif qa_gt.modality in [Modality.NODE, "node"]:
-            gen_answer = literal_eval(gen_answer)
-            assert isinstance(qa_gt.answer, List)
-            accuracy = compute_f1_score_nodes(gt=qa_gt.answer, pred=gen_answer)
-            logger.info(f"Nodes GT {qa_gt.answer}")
-            logger.info(f"Nodes pred: {gen_answer}")
-            logger.info(f"F1-score is {accuracy}")
-        elif qa_gt.modality in [Modality.TIME_POINT, "time_point"]:
             try:
-                gen_time = datetime.strptime(gen_answer, "%Y-%m-%d %H:%M:%S")
+                gen_answer = literal_eval(str(gen_answer))
             except ValueError:
-                # To deal with ReMEmbR not returning the date
-                gen_time = datetime.strptime(f"2025-08-30 {gen_answer}", "%Y-%m-%d %H:%M:%S")
+                gen_answer = [str(gen_answer)]
+                logger.warning(f"Gen answer for modality 'node' must be List, but got {gen_answer}")
+            if not isinstance(gen_answer, List):
+                gen_answer = [str(gen_answer)]
+                logger.warning(f"Gen answer for modality 'node' must be List, but got {gen_answer}")
+            assert isinstance(
+                qa_gt.answer, List
+            ), f"GT answer for modality 'node' must be List, but got {qa_gt.answer}"
+            accuracy = compute_f1_score_nodes(gt=qa_gt.answer, pred=gen_answer)
+            logger.debug(f"Nodes GT {qa_gt.answer}")
+            logger.debug(f"Nodes pred: {gen_answer}")
+            logger.debug(f"F1-score is {accuracy}")
+        elif qa_gt.modality in [Modality.TIME_POINT, "time_point"]:
             gt_answer = datetime.strptime(str(qa_gt.answer), "%Y-%m-%d %H:%M:%S")
-            time_diff = abs((gen_time - gt_answer).total_seconds() / 60.0)
-            logger.debug(f"Time diff is {time_diff}")
-            accuracy = 1.0 if time_diff < 2.0 else 0.0
+            try:
+                gen_time = datetime.strptime(str(gen_answer), "%Y-%m-%d %H:%M:%S")
+                time_diff = abs((gen_time - gt_answer).total_seconds() / 60.0)
+                logger.debug(f"Time diff is {time_diff}")
+                accuracy = 1.0 if time_diff < 2.0 else 0.0
+                time_diff = abs((gen_time - gt_answer).total_seconds() / 60.0)
+                logger.debug(f"Time diff is {time_diff}")
+                accuracy = 1.0 if time_diff < 2.0 else 0.0
+            except ValueError:
+                accuracy = 0.0
         else:
             logger.error(f"Invalid modality: {qa_gt.modality}")
             raise NotImplementedError
@@ -93,10 +116,16 @@ class EGGEvaluator:
                 self.get_id(): {
                     "query": qa_gt.query,
                     "gt_answer": qa_gt.answer,
-                    "modality": qa_gt.modality.name.lower() if isinstance(qa_gt.modality, Modality) else qa_gt.modality,
+                    "modality": (
+                        qa_gt.modality.name.lower()
+                        if isinstance(qa_gt.modality, Modality)
+                        else qa_gt.modality
+                    ),
                     "gen_answer": gen_answer,
-                    "eval_response": str(eval_response),
+                    "eval_response": eval_response,
                     "accuracy": accuracy,
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
                     "optimal_subgraph": optimal_subgraph,
                 }
             }
@@ -107,6 +136,6 @@ class EGGEvaluator:
         with open(output_file, "w") as fp:
             json.dump(self.eval_data, fp)
 
-    def load_eval_data(self, data_file:str):
+    def load_eval_data(self, data_file: str):
         with open(data_file, "r") as fp:
             self.eval_data = json.load(fp)

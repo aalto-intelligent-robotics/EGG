@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
-from typing import Sequence, Optional
+from typing import Sequence, Optional, Tuple
 
 from egg.utils.logger import getLogger
 
@@ -27,5 +27,5 @@ class LLMAgent(ABC):
         return self._temperature
 
     @abstractmethod
-    def query(self, llm_message: Sequence, count_tokens: bool = False) -> Optional[str]:
+    def query(self, llm_message: Sequence, count_tokens: bool = False) -> Tuple[Optional[str], int, int]:
         ...

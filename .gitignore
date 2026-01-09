@@ -13,3 +13,4 @@ weights/
 *.bak
 graph*.json
 eval*.json
+trial*

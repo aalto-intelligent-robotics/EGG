@@ -17,9 +17,9 @@ The environment is structured as a graph, with nodes and edges. The structure is
 - 'edges': includes 'event_object_edges'. Each edge is identified by a unique 'edge_id'. Each 'event_object_edge' connects an event to a related object, particularly 'from_event' is the event id that the edge is connected to, and 'to_object' is the object that is involved in the 'event'. Each edge has an 'object_role' attribute describing the role of the object in the event. E.g., If the edge's object_role is "Being picked up by the person", and connects from event 12: "The person picks up something" to object 1: "mug", then the mug is being picked up by the person.
 
 The current time is {current_time}. You will be provided a query and a modality to return your answer in. The available modalities are:
-    - node: return the list of node names of the object nodes that responds to the query. e.g., ["bowl_1", "mug_2", "faucet_0"]. Your answer could contain only one or multiple node names.
+    - node: return the list of node names of the object nodes that responds to the query. Your answer could contain only one node (e.g., ["mug_0"]) or multiple node names (e.g., ["bowl_1", "mug_2", "faucet_0"]).
     - text: Return the answer in natural language responding to the query.
-    - binary: Return either True or False.
+    - binary: Return either "True" or "False" (remember to put the double quotes).
     - time_point: Return the answer in the form of a point in time return the timestamp in the format yyyy-mm-dd hh:mm:ss
     - time_interval: Return the answer in the form of a time interval, return in the form yyyy-mm-dd hh:mm:ss - yyyy-mm-dd hh:mm:ss (start timestamp - end timestamp)
     - time_duration: Return the answer in the form hh:mm:ss.
@@ -34,7 +34,7 @@ You need to provide the answer to your query in this JSON format:
 [
     {{
         
-        "answer": <The final answer to the query. Note that the graph does not always contain enough information to answer the query. If the graph does not contain enough information, answer None.>
+        "answer": <The final answer to the query. Note that the graph does not always contain enough information to answer the query. If the graph does not contain enough information, answer "None".>
         "modality": <The modality that the answer is returned in strictly based on the tag at the beginning of the query.>
         "confidence": <How confident you are on the answer, from 0-1, 0 being you have no clue how to answer, and 1 being absolutely confident in the answer. Furthermore, if the events that help you generate this answer is far away from the current time, decrease the confidence.>
         "explanation": <The explanation to the answer. Clearly state which object nodes, event nodes are involved with their node ID if you use them to generate the answer. Clearly state which edges are involved as well if they are used to generate the answer.>

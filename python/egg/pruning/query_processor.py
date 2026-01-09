@@ -54,6 +54,7 @@ class QueryProcessor:
     A class that processes queries to manipulate EGG using EGGSlicer, leveraging
     large language models (LLM) to perform various information retrieval strategies.
     """
+
     def __init__(
         self,
         egg_slicer: EGGSlicer,
@@ -163,7 +164,7 @@ class QueryProcessor:
         self,
         query: str,
         modality: str,
-    ) -> Tuple[Optional[str], Optional[str], str]:
+    ) -> Tuple[Optional[str], Optional[str], str, int, int]:
         """
         Processes a query to manipulate EGG and retrieve information based on the current strategy.
 
@@ -188,49 +189,69 @@ class QueryProcessor:
             RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE,
         ]:
 
-            phase_1_response_content = self.phase_1()
+            phase_1_response_content, input_tokens, output_tokens = self.phase_1()
             if self.egg_slicer.pruned_egg.is_empty():
-                logger.warning("Sliced EGG is empty after phase 1, returning None answer.")
+                logger.warning(
+                    "Sliced EGG is empty after phase 1, returning None answer."
+                )
                 phase_2_response_content = None
-                phase_3_response_content = DEFAULT_NULL_ANSWER_TEMPLATE.format(modality=modality)
-                
-            else:    
-                phase_2_response_content = self.phase_2()
-                
+                phase_3_response_content = DEFAULT_NULL_ANSWER_TEMPLATE.format(
+                    modality=modality
+                )
+
+            else:
+                phase_2_response_content, input_tokens_2, output_tokens_2 = (
+                    self.phase_2()
+                )
+                input_tokens += input_tokens_2
+                output_tokens += output_tokens_2
+
                 if self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED:
                     self.messages[0] = {
                         "role": "system",
                         "content": deepcopy(PRUNING_UNIFIED_SYSTEM_PROMPT),
                     }
-                elif self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE:
+                elif (
+                    self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE
+                ):
                     self.messages[0] = {
                         "role": "system",
                         "content": deepcopy(PRUNING_UNIFIED_NO_EDGE_SYSTEM_PROMPT),
                     }
-                    
+
                 if self.egg_slicer.pruned_egg.is_empty():
-                    logger.warning("Sliced EGG is empty after phase 2, returning None answer.")
-                    phase_3_response_content = DEFAULT_NULL_ANSWER_TEMPLATE.format(modality=modality)
+                    logger.warning(
+                        "Sliced EGG is empty after phase 2, returning None answer."
+                    )
+                    phase_3_response_content = DEFAULT_NULL_ANSWER_TEMPLATE.format(
+                        modality=modality
+                    )
                 else:
-                    phase_3_response_content = self.phase_3(query=query, modality=modality)
+                    phase_3_response_content, input_tokens_3, output_tokens_3 = (
+                        self.phase_3(query=query, modality=modality)
+                    )
+                    input_tokens += input_tokens_3
+                    output_tokens += output_tokens_3
 
             return (
                 phase_1_response_content,
                 phase_2_response_content,
                 phase_3_response_content,
+                input_tokens,
+                output_tokens,
             )
         elif self.retrieval_strategy == RetrievalStrategy.SPATIAL_ONLY:
-            response_content = self.spatial_only()
-            return None, None, response_content
+            response_content, input_tokens, output_tokens = self.spatial_only()
+            return None, None, response_content, input_tokens, output_tokens
         elif self.retrieval_strategy == RetrievalStrategy.EVENT_ONLY:
-            response_content = self.event_only()
-            return None, None, response_content
+            response_content, input_tokens, output_tokens = self.event_only()
+            return None, None, response_content, input_tokens, output_tokens
         elif self.retrieval_strategy == RetrievalStrategy.NO_EDGE:
-            response_content = self.no_edge()
-            return None, None, response_content
+            response_content, input_tokens, output_tokens = self.no_edge()
+            return None, None, response_content, input_tokens, output_tokens
         else:
-            response_content = self.full_graph()
-            return None, None, response_content
+            response_content, input_tokens, output_tokens = self.full_graph()
+            return None, None, response_content, input_tokens, output_tokens
 
     def add_response(self, response: str):
         """
@@ -251,7 +272,7 @@ class QueryProcessor:
         )
         self.messages.append(self.phase_1_prompt)
 
-    def phase_1(self) -> str:
+    def phase_1(self) -> Tuple[str, int, int]:
         """
         Executes phase 1 of the query process.
 
@@ -259,12 +280,14 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_1_message()
-        phase_1_response_content = self.agent.query(
+        phase_1_response_content, input_tokens, output_tokens = self.agent.query(
             self.messages, count_tokens=True
         )
         assert phase_1_response_content is not None
         logger.debug(phase_1_response_content)
-        phase_1_response_dict = remove_explanation_and_convert(remove_code_blocks(phase_1_response_content))
+        phase_1_response_dict = remove_explanation_and_convert(
+            remove_code_blocks(phase_1_response_content)
+        )
         # print(phase_1_response_dict)
         assert phase_1_response_dict is not None
         if phase_1_response_dict[0]["start_year"] != 0:
@@ -299,7 +322,7 @@ class QueryProcessor:
             locations_list=phase_1_response_dict[0]["locations"]
         )
         self.add_response(phase_1_response_content)
-        return phase_1_response_content
+        return phase_1_response_content, input_tokens, output_tokens
 
     def set_phase_2_message(self):
         """
@@ -318,7 +341,7 @@ class QueryProcessor:
             )
         self.messages.append(self.phase_2_prompt)
 
-    def phase_2(self) -> str:
+    def phase_2(self) -> Tuple[str, int, int]:
         """
         Executes phase 2 of the query process, refining results using objects and events.
 
@@ -326,12 +349,14 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_2_message()
-        phase_2_response_content = self.agent.query(
+        phase_2_response_content, input_tokens, output_tokens = self.agent.query(
             self.messages, count_tokens=True
         )
         assert phase_2_response_content is not None
         logger.debug(phase_2_response_content)
-        phase_2_response_dict = remove_explanation_and_convert(remove_code_blocks(phase_2_response_content))
+        phase_2_response_dict = remove_explanation_and_convert(
+            remove_code_blocks(phase_2_response_content)
+        )
         assert phase_2_response_dict is not None
         if self.retrieval_strategy in [
             RetrievalStrategy.PRUNING_UNIFIED,
@@ -349,7 +374,7 @@ class QueryProcessor:
             )
 
             self.add_response(phase_2_response_content)
-        return phase_2_response_content
+        return phase_2_response_content, input_tokens, output_tokens
 
     def set_phase_3_message(self, query: str, modality: str):
         """
@@ -368,29 +393,33 @@ class QueryProcessor:
         # For applicactions involving locations, add them back (e.g. object navigation)
         for event_id in subgraph["nodes"]["event_nodes"].keys():
             subgraph["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
-            subgraph["nodes"]["event_nodes"][event_id].pop("timestamped_observation_odom")
+            subgraph["nodes"]["event_nodes"][event_id].pop(
+                "timestamped_observation_odom"
+            )
         for object_id in subgraph["nodes"]["object_nodes"].keys():
-            subgraph["nodes"]["object_nodes"][object_id]["attributes"].pop("timestamped_position")
+            subgraph["nodes"]["object_nodes"][object_id]["attributes"].pop(
+                "timestamped_position"
+            )
 
         logger.debug(f"Optimal subgraph: {self.egg_slicer.pruned_egg.pretty_str()}")
-        
+
         self.messages[0]["content"] = self.messages[0]["content"].format(
             current_time=self.current_time, query=query, modality=modality
         )
-        
+
         # Remove edges for no_edge strategy
         if self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE:
             subgraph.pop("edges")
-            
+
         self.serialized_optimal_subgraph = subgraph
-        
+
         logger.debug(f"Optimal subgraph serialized: {self.serialized_optimal_subgraph}")
-        
+
         self.messages[-1]["content"] = self.messages[-1]["content"].format(
             subgraph=self.serialized_optimal_subgraph
         )
 
-    def phase_3(self, query: str, modality: str) -> str:
+    def phase_3(self, query: str, modality: str) -> Tuple[str, int, int]:
         """
         Executes phase 3 of the query process, finalizing the optimal subgraph serialization.
 
@@ -402,14 +431,14 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_3_message(query=query, modality=modality)
-        phase_3_response_content = self.agent.query(
+        phase_3_response_content, input_tokens, output_tokens = self.agent.query(
             self.messages, count_tokens=True
         )
         logger.debug(phase_3_response_content)
         assert phase_3_response_content is not None
-        return phase_3_response_content
+        return phase_3_response_content, input_tokens, output_tokens
 
-    def full_graph(self) -> str:
+    def full_graph(self) -> Tuple[str, int, int]:
         """
         Retrieves and processes the full graph.
 
@@ -422,13 +451,15 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.query(self.messages, count_tokens=True)
+        response_content, input_tokens, output_tokens = self.agent.query(
+            self.messages, count_tokens=True
+        )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
-        return response_content
+        return response_content, input_tokens, output_tokens
 
-    def spatial_only(self) -> str:
+    def spatial_only(self) -> Tuple[str, int, int]:
         """
         Execute SPATIAL_ONLY strategy: EGG with only spatial component.
 
@@ -443,13 +474,15 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.query(self.messages, count_tokens=True)
+        response_content, input_tokens, output_tokens = self.agent.query(
+            self.messages, count_tokens=True
+        )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
-        return response_content
+        return response_content, input_tokens, output_tokens
 
-    def event_only(self) -> str:
+    def event_only(self) -> Tuple[str, int, int]:
         """
         Execute EVENT_ONLY strategy: EGG with only event component.
 
@@ -466,13 +499,15 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.query(self.messages, count_tokens=True)
+        response_content, input_tokens, output_tokens = self.agent.query(
+            self.messages, count_tokens=True
+        )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
-        return response_content
+        return response_content, input_tokens, output_tokens
 
-    def no_edge(self) -> str:
+    def no_edge(self) -> Tuple[str, int, int]:
         """
         Execute NO_EDGE strategy: EGG without edges connecting spatial and event components.
 
@@ -488,11 +523,13 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.query(self.messages, count_tokens=True)
+        response_content, input_tokens, output_tokens = self.agent.query(
+            self.messages, count_tokens=True
+        )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
-        return response_content
+        return response_content, input_tokens, output_tokens
 
     def get_used_tokens(self) -> Tuple[int, int]:
         """

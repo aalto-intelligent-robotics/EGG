@@ -602,7 +602,7 @@ class EGG:
             image_captioning_messages = build_image_captioning_messages(
                 image=obj_views_image, object_class=obj_node.object_class
             )
-            obj_caption = llm_agent.query(image_captioning_messages)
+            obj_caption, _, _ = llm_agent.query(image_captioning_messages)
             assert obj_caption is not None
             obj_node.caption = obj_caption
 

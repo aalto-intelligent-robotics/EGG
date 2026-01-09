@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Tuple
 from langchain_ollama import ChatOllama
 from langchain_core.callbacks import get_usage_metadata_callback
 import logging
@@ -31,14 +31,16 @@ class OllamaAgent(LLMAgent):
         )
         logger.info(f"🧠 Using {self._model.model}")
 
-    def query(self, llm_message: Sequence, count_tokens: bool = False) -> Optional[str]:
+    def query(
+        self, llm_message: Sequence, count_tokens: bool = False
+    ) -> Tuple[Optional[str], int, int]:
         with get_usage_metadata_callback() as cb:
             response = self._model.invoke(llm_message)
+            input_tokens = 0
+            output_tokens = 0
             if count_tokens:
-                self.total_input_tokens += cb.usage_metadata[self._model_name][
-                    "input_tokens"
-                ]
-                self.total_input_tokens += cb.usage_metadata[self._model_name][
-                    "output_tokens"
-                ]
-        return str(response.content)
+                input_tokens = cb.usage_metadata[self._model_name]["input_tokens"]
+                self.total_input_tokens += input_tokens
+                ouput_tokens = cb.usage_metadata[self._model_name]["output_tokens"]
+                self.total_input_tokens += ouput_tokens
+        return str(response.content), input_tokens, output_tokens

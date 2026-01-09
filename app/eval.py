@@ -87,7 +87,7 @@ logger.info(f"graph file used: {graph_file}")
 logger.info(f"Auto: {args.auto}")
 logger.info(f"Strategy: {args.strategy.lower()}")
 for qa_gt in qa_dataset.qa_ground_truth_list:
-    _, _, gen_answer = processor.process_query(qa_gt.query, qa_gt.modality.name.lower())
+    _, _, gen_answer, _, _ = processor.process_query(qa_gt.query, qa_gt.modality.name.lower())
 
     eval_response = evaluator.eval_qa(
         qa_gt=qa_gt,
