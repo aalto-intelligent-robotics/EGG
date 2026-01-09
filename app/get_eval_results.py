@@ -3,7 +3,7 @@
 import numpy as np
 from typing import Dict
 import json
-import pickle
+from tqdm import tqdm
 import logging
 import argparse
 
@@ -31,7 +31,7 @@ llm_agent = OpenaiAgent()
 evaluator = EGGEvaluator(llm_agent=llm_agent)
 
 accuracy_list = []
-for result in benchmark_data.values():
+for result in tqdm(benchmark_data.values()):
     if "optimal_subgraph" in result.keys():
         optimal_subgraph = result["optimal_subgraph"]
     else:

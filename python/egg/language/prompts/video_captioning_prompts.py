@@ -37,9 +37,11 @@ def build_video_object_role_caption_query(summary: str, object_of_interest: str)
 # NOTE: Adopted and modified from https://github.com/NVIDIA-AI-IOT/remembr/blob/964faab296fe70f8a8dbb9135adf20fecb758525/examples/nova_carter_demo/python/captioner_node.py#L26 to suit the evalutaion
 
 REMEMBR_VIDEO_SUMMARY_CAPTION_TEMPLATE = """
-    <video>\nYou are a wandering around inside a building, observing a person <object0><region> doing something with {objects}.\
-    Describe in as much detail as possible what you see in the video. \
-    Specifically focus on the action of the person <object0><region>, the appearances of the objects, events/ectivities, and other interesting details. Think step by step about these details and be very specific.
+    <video>\nYou are a wandering around inside a building. You are observing the actions of a person <object0><region> doing something with {objects}.
+    The person is either inside the coffee room or the office.
+    Describe the person's actions in the video in as much detail as possible.
+    Specifically focus on the actions of the person <object0><region>, the appearances of the objects, events/ectivities, and other interesting details.
+    Think step by step about these details and be very specific.
 """
 
 def build_remembr_video_summary_query(objects: List[str]) -> str:

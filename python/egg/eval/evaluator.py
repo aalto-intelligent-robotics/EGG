@@ -69,17 +69,20 @@ class EGGEvaluator:
             eval_response = str(eval_response)
             accuracy = get_eval_accuracy(eval_response)
         elif qa_gt.modality in [Modality.BINARY, "binary"]:
+            invalid_ans = False
             if str(gen_answer).lower() in ["yes", "true"]:
                 gen_answer = "1"
             elif (gen_answer).lower() in ["no", "false"]:
                 gen_answer = "0"
             else:
-                logger.error(f"Invalid binary answer: {gen_answer}")
-                raise NotImplementedError
+                logger.warning(f"Invalid binary answer: {gen_answer}")
+                accuracy = 0.0
+                invalid_ans = True
             assert isinstance(
                 qa_gt.answer, bool
             ), f"GT answer for modality binary must be bool but got {qa_gt.answer}"
-            accuracy = 1.0 if int(qa_gt.answer) == int(gen_answer) else 0.0
+            if not invalid_ans:
+                accuracy = 1.0 if int(qa_gt.answer) == int(gen_answer) else 0.0
         elif qa_gt.modality in [Modality.NODE, "node"]:
             try:
                 gen_answer = literal_eval(str(gen_answer))
