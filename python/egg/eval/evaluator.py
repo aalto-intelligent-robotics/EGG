@@ -5,11 +5,13 @@ from ast import literal_eval
 from datetime import datetime
 
 from egg.eval.qa_ground_truth import Modality, QAGroundTruth
-from egg.graph.egg import EGG
+from egg.language.openai_agent import OpenaiAgent
+from egg.language.prompts.answer_templates import EVALUATOR_RESPONSE_FORMAT
 from egg.utils.logger import getLogger
 from egg.utils.language_utils import get_eval_accuracy
-from egg.language.llm import LLMAgent
-from egg.language.prompts.evaluator_prompts import build_evaluator_messages
+from egg.language.prompts.evaluator_prompts import (
+    build_evaluator_messages,
+)
 from torch import Value
 
 
@@ -35,7 +37,7 @@ def compute_f1_score_nodes(gt: List, pred: List) -> float:
 
 
 class EGGEvaluator:
-    def __init__(self, llm_agent: LLMAgent, eval_data: Dict = {}):
+    def __init__(self, llm_agent: OpenaiAgent, eval_data: Dict = {}):
         self.agent = llm_agent
         self.eval_data = eval_data
         self._qa_id = 0
@@ -63,11 +65,13 @@ class EGGEvaluator:
             eval_messages = build_evaluator_messages(
                 query=qa_gt.query, gt_answer=str(qa_gt.answer), gen_answer=gen_answer
             )
-            eval_response, _, _ = self.agent.query(
-                llm_message=eval_messages, count_tokens=False
+            eval_response, _, _ = self.agent.query_with_structured_output(
+                llm_message=eval_messages,
+                count_tokens=False,
+                response_format=EVALUATOR_RESPONSE_FORMAT,
             )
-            eval_response = str(eval_response)
-            accuracy = get_eval_accuracy(eval_response)
+            eval_response = json.loads(str(eval_response))
+            accuracy = eval_response["accuracy"]
         elif qa_gt.modality in [Modality.BINARY, "binary"]:
             invalid_ans = False
             if str(gen_answer).lower() in ["yes", "true"]:
@@ -88,10 +92,14 @@ class EGGEvaluator:
                 gen_answer = literal_eval(str(gen_answer))
             except ValueError:
                 gen_answer = [str(gen_answer)]
-                logger.warning(f"Gen answer for modality 'node' must be List, but got {gen_answer}")
+                logger.warning(
+                    f"Gen answer for modality 'node' must be List, but got {gen_answer}"
+                )
             if not isinstance(gen_answer, List):
                 gen_answer = [str(gen_answer)]
-                logger.warning(f"Gen answer for modality 'node' must be List, but got {gen_answer}")
+                logger.warning(
+                    f"Gen answer for modality 'node' must be List, but got {gen_answer}"
+                )
             assert isinstance(
                 qa_gt.answer, List
             ), f"GT answer for modality 'node' must be List, but got {qa_gt.answer}"

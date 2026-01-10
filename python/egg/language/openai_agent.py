@@ -1,7 +1,8 @@
 import os
-from typing import Sequence, Optional, Tuple
+from typing import Sequence, Optional, Tuple, Dict
 import httpx
 from openai import OpenAI
+from openai.types.chat.completion_create_params import ResponseFormat
 import tiktoken
 import logging
 
@@ -31,7 +32,8 @@ class OpenaiAgent(LLMAgent):
                 base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4o-mini-2024-07-18"
                 logger.info(f"🧠 Using GPT4o-mini from {base_url}")
             else:
-                base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/gpt4o"
+                # base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/gpt4o"
+                base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4o-2024-11-20"
                 # base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4.1-2025-04-14"
                 logger.info(f"🧠 Using GPT4 from {base_url}")
             openai_endpoint_url = "/chat/completions"
@@ -65,13 +67,50 @@ class OpenaiAgent(LLMAgent):
         )
 
     def query(
-        self, llm_message: Sequence, count_tokens: bool = False
+        self,
+        llm_message: Sequence,
+        count_tokens: bool = False,
     ) -> Tuple[Optional[str], int, int]:
         # Send query
         completion = self._model.chat.completions.create(
             model="no_effect",  # the model variable must be set, but has no effect, model selection done with URL
             messages=llm_message,
             temperature=self.temperature,
+        )
+        # Get Content of the response
+        response_content = completion.choices[0].message.content
+        if response_content is None:
+            return response_content, 0, 0
+
+        # Count tokens
+        encoding_name = "cl100k_base"  # For GPT-3.5-turbo-1106 and GPT-4o
+        encoding = tiktoken.get_encoding(encoding_name)
+
+        input_tokens = 0
+        output_tokens = 0
+        if count_tokens:
+            for message in llm_message:
+                input_tokens += len(encoding.encode(message["content"]))
+
+            output_tokens = len(encoding.encode(response_content))
+
+            self.total_input_tokens += input_tokens
+            self.total_output_tokens += output_tokens
+
+        return response_content, input_tokens, output_tokens
+
+    def query_with_structured_output(
+        self,
+        response_format: ResponseFormat,
+        llm_message: Sequence,
+        count_tokens: bool = False,
+    ) -> Tuple[Optional[str], int, int]:
+        # Send query
+        completion = self._model.chat.completions.create(
+            model="no_effect",  # the model variable must be set, but has no effect, model selection done with URL
+            messages=llm_message,
+            temperature=self.temperature,
+            response_format=response_format,
         )
         # Get Content of the response
         response_content = completion.choices[0].message.content

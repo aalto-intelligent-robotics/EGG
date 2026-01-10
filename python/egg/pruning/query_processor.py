@@ -3,7 +3,9 @@ import sys
 from typing import Optional, Tuple
 import datetime
 import logging
+import json
 
+from egg.language.openai_agent import OpenaiAgent
 from egg.utils.language_utils import remove_code_blocks, remove_explanation_and_convert
 
 from egg.pruning.egg_slicer import EGGSlicer
@@ -35,7 +37,12 @@ from egg.language.prompts.no_edge_prompts import (
     NO_EDGE_SYSTEM_PROMPT,
     NO_EDGE_USER_PROMPT,
 )
-from egg.language.prompts.answer_templates import DEFAULT_NULL_ANSWER_TEMPLATE
+from egg.language.prompts.answer_templates import (
+    DEFAULT_NULL_ANSWER_TEMPLATE,
+    PHASE_1_RESPONSE_FORMAT,
+    PHASE_2_RESPONSE_FORMAT,
+    QUERY_RESPONSE_FORMAT,
+)
 from egg.utils.timestamp import datetime_to_ns
 from egg.language.llm import LLMAgent
 from egg.utils.logger import getLogger
@@ -280,17 +287,31 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_1_message()
-        phase_1_response_content, input_tokens, output_tokens = self.agent.query(
-            self.messages, count_tokens=True
-        )
+        if isinstance(self.agent, OpenaiAgent):
+            phase_1_response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=PHASE_1_RESPONSE_FORMAT,
+                )
+            )
+            logger.info(f"Phase 1 structured output: {phase_1_response_content}")
+            phase_1_response_dict = json.loads(str(phase_1_response_content))
+            phase_1_response_dict.pop("explanation_time")
+            phase_1_response_dict.pop("explanation_locations")
+        else:
+            # TODO: implement structured outputs for open-source models
+            phase_1_response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
+            phase_1_response_dict = remove_explanation_and_convert(
+                remove_code_blocks(phase_1_response_content)
+            )
+            assert phase_1_response_dict is not None
+            phase_1_response_dict = phase_1_response_dict[0]
+        logger.debug(f"Phase 1: {phase_1_response_dict}")
         assert phase_1_response_content is not None
-        logger.debug(phase_1_response_content)
-        phase_1_response_dict = remove_explanation_and_convert(
-            remove_code_blocks(phase_1_response_content)
-        )
-        # print(phase_1_response_dict)
-        assert phase_1_response_dict is not None
-        if phase_1_response_dict[0]["start_year"] != 0:
+        if phase_1_response_dict["start_year"] != 0:
             self.min_timestamp = datetime_to_ns(
                 datetime.datetime(
                     phase_1_response_dict[0]["start_year"],
@@ -302,24 +323,21 @@ class QueryProcessor:
             )
         else:
             self.min_timestamp = 0
-        if phase_1_response_dict[0]["end_year"] != "inf":
-            self.max_timestamp = datetime_to_ns(
-                datetime.datetime(
-                    phase_1_response_dict[0]["end_year"],
-                    phase_1_response_dict[0]["end_month"],
-                    phase_1_response_dict[0]["end_day"],
-                    phase_1_response_dict[0]["end_hour"],
-                    phase_1_response_dict[0]["end_minute"],
-                )
+        self.max_timestamp = datetime_to_ns(
+            datetime.datetime(
+                phase_1_response_dict["end_year"],
+                phase_1_response_dict["end_month"],
+                phase_1_response_dict["end_day"],
+                phase_1_response_dict["end_hour"],
+                phase_1_response_dict["end_minute"],
             )
-        else:
-            self.max_timestamp = sys.maxsize
+        )
         self.egg_slicer.prune_graph_by_time_range(
             min_timestamp=self.min_timestamp,
             max_timestamp=self.max_timestamp,
         )
         self.egg_slicer.prune_graph_by_location(
-            locations_list=phase_1_response_dict[0]["locations"]
+            locations_list=phase_1_response_dict["locations"]
         )
         self.add_response(phase_1_response_content)
         return phase_1_response_content, input_tokens, output_tokens
@@ -349,21 +367,34 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_2_message()
-        phase_2_response_content, input_tokens, output_tokens = self.agent.query(
-            self.messages, count_tokens=True
-        )
+        if isinstance(self.agent, OpenaiAgent):
+            phase_2_response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=PHASE_2_RESPONSE_FORMAT,
+                )
+            )
+            phase_2_response_dict = json.loads(str(phase_2_response_content))
+            phase_2_response_dict.pop("explanation_objects")
+            phase_2_response_dict.pop("explanation_events")
+        else:
+            phase_2_response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
+            phase_2_response_dict = remove_explanation_and_convert(
+                remove_code_blocks(phase_2_response_content)
+            )
+            assert phase_2_response_dict is not None
+            phase_2_response_dict = phase_2_response_dict[0]
         assert phase_2_response_content is not None
-        logger.debug(phase_2_response_content)
-        phase_2_response_dict = remove_explanation_and_convert(
-            remove_code_blocks(phase_2_response_content)
-        )
-        assert phase_2_response_dict is not None
+        logger.debug(f"Phase 2: {phase_2_response_dict}")
         if self.retrieval_strategy in [
             RetrievalStrategy.PRUNING_UNIFIED,
             RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE,
         ]:
-            relevant_object_ids = phase_2_response_dict[0]["object_nodes"]
-            relevant_event_ids = phase_2_response_dict[0]["event_nodes"]
+            relevant_object_ids = phase_2_response_dict["object_nodes"]
+            relevant_event_ids = phase_2_response_dict["event_nodes"]
 
             self.egg_slicer.reset_pruned_egg()
             self.egg_slicer.merge_events_and_objects(
@@ -431,10 +462,18 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_3_message(query=query, modality=modality)
-        phase_3_response_content, input_tokens, output_tokens = self.agent.query(
-            self.messages, count_tokens=True
-        )
-        logger.debug(phase_3_response_content)
+        if isinstance(self.agent, OpenaiAgent):
+            phase_3_response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=QUERY_RESPONSE_FORMAT,
+                )
+            )
+        else:
+            phase_3_response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
         assert phase_3_response_content is not None
         return phase_3_response_content, input_tokens, output_tokens
 
@@ -446,14 +485,32 @@ class QueryProcessor:
         :rtype: str
         """
         full_graph_data = self.egg_slicer.egg.serialize()
+        for event_id in full_graph_data["nodes"]["event_nodes"].keys():
+            full_graph_data["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
+            full_graph_data["nodes"]["event_nodes"][event_id].pop(
+                "timestamped_observation_odom"
+            )
+        for object_id in full_graph_data["nodes"]["object_nodes"].keys():
+            full_graph_data["nodes"]["object_nodes"][object_id]["attributes"].pop(
+                "timestamped_position"
+            )
         self.phase_1_prompt["content"] = self.phase_1_prompt["content"].format(
             full_graph=full_graph_data
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content, input_tokens, output_tokens = self.agent.query(
-            self.messages, count_tokens=True
-        )
+        if isinstance(self.agent, OpenaiAgent):
+            response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=QUERY_RESPONSE_FORMAT,
+                )
+            )
+        else:
+            response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
@@ -474,9 +531,18 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content, input_tokens, output_tokens = self.agent.query(
-            self.messages, count_tokens=True
-        )
+        if isinstance(self.agent, OpenaiAgent):
+            response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=QUERY_RESPONSE_FORMAT,
+                )
+            )
+        else:
+            response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
@@ -499,9 +565,18 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content, input_tokens, output_tokens = self.agent.query(
-            self.messages, count_tokens=True
-        )
+        if isinstance(self.agent, OpenaiAgent):
+            response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=QUERY_RESPONSE_FORMAT,
+                )
+            )
+        else:
+            response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
@@ -523,9 +598,18 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content, input_tokens, output_tokens = self.agent.query(
-            self.messages, count_tokens=True
-        )
+        if isinstance(self.agent, OpenaiAgent):
+            response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=QUERY_RESPONSE_FORMAT,
+                )
+            )
+        else:
+            response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data

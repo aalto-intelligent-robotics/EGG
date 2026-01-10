@@ -15,7 +15,6 @@ from egg.graph.egg import EGG
 from egg.language.openai_agent import OpenaiAgent
 from egg.language.ollama_agent import OllamaAgent
 from egg.pruning.strategies import RetrievalStrategy
-from egg.utils.language_utils import get_gen_answer
 from egg.utils.logger import getLogger
 
 logger: logging.Logger = getLogger(
@@ -102,9 +101,10 @@ else:
 
 for id, qa_gt in enumerate(tqdm(qa_dataset.qa_ground_truth_list)):
     if str(id) not in benchmark_data.keys():
-        _, _, gen_answer, query_input_tokens, query_output_tokens = (
+        _, _, gen_data, query_input_tokens, query_output_tokens = (
             processor.process_query(qa_gt.query, qa_gt.modality.name.lower())
         )
+        gen_answer = json.loads(gen_data)["answer"]
         logger.debug(f"Query {id}: {qa_gt.query}")
         logger.debug(f"modality: {qa_gt.modality.name.lower()}")
         logger.debug(f"Gen answer: {gen_answer}")
@@ -112,7 +112,7 @@ for id, qa_gt in enumerate(tqdm(qa_dataset.qa_ground_truth_list)):
             "query": qa_gt.query,
             "modality": qa_gt.modality.name.lower(),
             "gt_answer": qa_gt.answer,
-            "gen_answer": get_gen_answer(gen_answer),
+            "gen_answer": gen_answer,
             "input_tokens": query_input_tokens,
             "output_tokens": query_output_tokens,
             "optimal_subgraph": str(processor.serialized_optimal_subgraph),
