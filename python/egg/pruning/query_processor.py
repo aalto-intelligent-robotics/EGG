@@ -295,7 +295,6 @@ class QueryProcessor:
                     response_format=PHASE_1_RESPONSE_FORMAT,
                 )
             )
-            logger.info(f"Phase 1 structured output: {phase_1_response_content}")
             phase_1_response_dict = json.loads(str(phase_1_response_content))
             phase_1_response_dict.pop("explanation_time")
             phase_1_response_dict.pop("explanation_locations")
@@ -314,11 +313,11 @@ class QueryProcessor:
         if phase_1_response_dict["start_year"] != 0:
             self.min_timestamp = datetime_to_ns(
                 datetime.datetime(
-                    phase_1_response_dict[0]["start_year"],
-                    phase_1_response_dict[0]["start_month"],
-                    phase_1_response_dict[0]["start_day"],
-                    phase_1_response_dict[0]["start_hour"],
-                    phase_1_response_dict[0]["start_minute"],
+                    phase_1_response_dict["start_year"],
+                    phase_1_response_dict["start_month"],
+                    phase_1_response_dict["start_day"],
+                    phase_1_response_dict["start_hour"],
+                    phase_1_response_dict["start_minute"],
                 )
             )
         else:
