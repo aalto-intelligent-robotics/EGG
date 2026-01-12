@@ -29,17 +29,6 @@ Important: Pay attention to the object node id that is involved in the events. T
 Important: Return your answers in JSON format, do not write comments.
 Important: Try to use all the information available to you, including the object nodes, event nodes to make your decision.
 
-You need to provide the answer to your query in this JSON format:
-[
-    {{
-        
-        "answer": <The final answer to the query. Note that the graph does not always contain enough information to answer the query. If the graph does not contain enough information, answer "None".>
-        "modality": <The modality that the answer is returned in strictly based on the tag at the beginning of the query.>
-        "confidence": <How confident you are on the answer, from 0-1, 0 being you have no clue how to answer, and 1 being absolutely confident in the answer. Furthermore, if the events that help you generate this answer is far away from the current time, decrease the confidence.>
-        "explanation": <The explanation to the answer. Clearly state which object nodes, event nodes are involved with their node ID if you use them to generate the answer.>
-    }}
-]
-
 The user query is: {query}.
 The returning modality is: {modality}
 """

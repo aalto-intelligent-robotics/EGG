@@ -22,16 +22,27 @@ parser.add_argument("-g", "--graph-file", type=str, default="./graph_gt.json")
 args = parser.parse_args()
 
 with open(args.graph_file) as fp:
-    full_graph = json.load(fp)
+    fg = json.load(fp)
+
+# NOTE: Convert event ids to 0
+event_ids = list(fg["nodes"]["event_nodes"].keys())
+for e_id in event_ids:
+    fg["nodes"]["event_nodes"][int(e_id)] = fg["nodes"]["event_nodes"].pop(e_id)
+object_ids = list(fg["nodes"]["object_nodes"].keys())
+for o_id in object_ids:
+    fg["nodes"]["object_nodes"][int(o_id)] = fg["nodes"]["object_nodes"].pop(o_id)
+edge_ids = list(fg["edges"]["event_object_edges"].keys())
+for ed_id in edge_ids:
+    fg["edges"]["event_object_edges"][int(ed_id)] = fg["edges"]["event_object_edges"].pop(ed_id)
 
 # NOTE: Involved object ID set by edges, remove to avoid confusion.
 # Remove timestamped positions to reduce token usage. Not used in this evaluation
 # For applicactions involving locations, add them back (e.g. object navigation)
-for event_id in full_graph["nodes"]["event_nodes"].keys():
-    full_graph["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
-    full_graph["nodes"]["event_nodes"][event_id].pop("timestamped_observation_odom")
-for object_id in full_graph["nodes"]["object_nodes"].keys():
-    full_graph["nodes"]["object_nodes"][object_id]["attributes"].pop("timestamped_position")
+for e_id in fg["nodes"]["event_nodes"].keys():
+    fg["nodes"]["event_nodes"][e_id].pop("involved_object_ids")
+    fg["nodes"]["event_nodes"][e_id].pop("timestamped_observation_odom")
+for o_id in fg["nodes"]["object_nodes"].keys():
+    fg["nodes"]["object_nodes"][o_id]["attributes"].pop("timestamped_position")
 
 analyzer = EGGAnalyzer(args.results_file)
 if args.modality == "failure":
@@ -45,18 +56,20 @@ if args.modality == "failure":
             + f"Graph: {eval_sample['optimal_subgraph']}\n\n"
         )
 else:
-    for m in ["text", "binary", "node", "time", "all"]:
+    for m in ["all", "text", "binary", "node", "time"]:
         modality_data = analyzer.get_eval_data_by_modality(modality=m)
         accuracy_list = []
         compression_list = []
         for id, eval_sample in modality_data.items():
-            graph_percentage = len(str(eval_sample["optimal_subgraph"])) / len(str(full_graph))
+            graph_percentage = len(str(eval_sample["optimal_subgraph"])) / len(str(fg))
             accuracy_list.append(eval_sample["accuracy"])
             compression_list.append(graph_percentage)
-        logger.info(
-            f"Average accuracy of modality {m}: {numpy.mean(accuracy_list)}"
-        )
+        logger.info(f"Average accuracy of modality {m}: {numpy.mean(accuracy_list)}")
         if m == "all":
             logger.info(
-                f"Average compression % of modality {m}: {100 - numpy.mean(compression_list) * 100}%"
+                f"Average compression % of modality {m}: {100 - (numpy.mean(compression_list) * 100)}%"
             )
+total_input_tokens, total_output_tokens = analyzer.get_token_usage()
+logger.info(f"Total input tokens: {total_input_tokens}")
+logger.info(f"Total output tokens: {total_output_tokens}")
+logger.info(f"Total tokens: {total_input_tokens + total_output_tokens}")

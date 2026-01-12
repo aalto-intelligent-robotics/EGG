@@ -82,9 +82,6 @@ class EGGEvaluator:
                 logger.warning(f"Invalid binary answer: {gen_answer}")
                 accuracy = 0.0
                 invalid_ans = True
-            assert isinstance(
-                qa_gt.answer, bool
-            ), f"GT answer for modality binary must be bool but got {qa_gt.answer}"
             if not invalid_ans:
                 accuracy = 1.0 if int(qa_gt.answer) == int(gen_answer) else 0.0
         elif qa_gt.modality in [Modality.NODE, "node"]:

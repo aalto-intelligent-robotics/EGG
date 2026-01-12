@@ -43,8 +43,8 @@ for result in tqdm(benchmark_data.values()):
         qa_gt=qa_gt,
         gen_answer=result["gen_answer"],
         optimal_subgraph=optimal_subgraph,
-        input_tokens=result["input_tokens"],
-        output_tokens=result["output_tokens"],
+        input_tokens=result["input_tokens"] if "remembr" not in args.file else 0,
+        output_tokens=result["output_tokens"] if "remembr" not in args.file else 0,
     )
     accuracy_list.append(accuracy)
 mean_accuracy = np.mean(accuracy_list)
