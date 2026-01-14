@@ -56,7 +56,6 @@ def print_timestamped_observation_odom(
         output_str += (
             f"\t{ns_to_datetime(timestamp_ns)}:"
             + f"\n\t- Camera Odom: {odom['camera_odom']}\n"
-            + f"\t- Base Odom: {odom['base_odom']}\n"
         )
         if first_only:
             break

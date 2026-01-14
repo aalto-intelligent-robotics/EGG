@@ -45,7 +45,6 @@ class EGGAnalyzer:
                 eval_data_by_modality.update({q_id: qa_data})
         return eval_data_by_modality
 
-
     def get_token_usage(self):
         total_input_tokens = 0
         total_output_tokens = 0

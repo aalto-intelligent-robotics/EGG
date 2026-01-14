@@ -76,7 +76,7 @@ class EGGEvaluator:
             invalid_ans = False
             if str(gen_answer).lower() in ["yes", "true"]:
                 gen_answer = "1"
-            elif (gen_answer).lower() in ["no", "false"]:
+            elif str(gen_answer).lower() in ["no", "false"]:
                 gen_answer = "0"
             else:
                 logger.warning(f"Invalid binary answer: {gen_answer}")

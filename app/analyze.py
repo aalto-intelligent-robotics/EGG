@@ -36,13 +36,8 @@ for ed_id in edge_ids:
     fg["edges"]["event_object_edges"][int(ed_id)] = fg["edges"]["event_object_edges"].pop(ed_id)
 
 # NOTE: Involved object ID set by edges, remove to avoid confusion.
-# Remove timestamped positions to reduce token usage. Not used in this evaluation
-# For applicactions involving locations, add them back (e.g. object navigation)
 for e_id in fg["nodes"]["event_nodes"].keys():
     fg["nodes"]["event_nodes"][e_id].pop("involved_object_ids")
-    fg["nodes"]["event_nodes"][e_id].pop("timestamped_observation_odom")
-for o_id in fg["nodes"]["object_nodes"].keys():
-    fg["nodes"]["object_nodes"][o_id]["attributes"].pop("timestamped_position")
 
 analyzer = EGGAnalyzer(args.results_file)
 if args.modality == "failure":

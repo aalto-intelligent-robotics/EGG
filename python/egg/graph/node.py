@@ -56,7 +56,7 @@ class EventNode(GraphNode):
     :param end: End timestamp of the event.
     :type end: int
     :param timestamped_observation_odom: Odometry data associated with timestamps, in the format
-        {timestamp: {"base_odom": [[x,y,z],[x,y,z,w]], "camera_odom": [[x,y,z],[x,y,z,w]]}}.
+        {timestamp: {"camera_odom": [[x,y,z],[x,y,z,w]]}}.
     :type timestamped_observation_odom: Dict[int, Dict[str, List]]
     :param involved_object_ids: List of object IDs involved in the event.
     :type involved_object_ids: List[int]
