@@ -8,7 +8,7 @@ DEFAULT_NULL_ANSWER_TEMPLATE = """
             "answer": None
             "modality": {modality}
             "confidence": 0
-            "explanation": "Empty graph, not enough information to answer the question."
+            "explanation": "Not enough information to answer the question."
         }} ]
 """
 
@@ -42,9 +42,22 @@ QUERY_RESPONSE_FORMAT: ResponseFormat = {
         "schema": {
             "type": "object",
             "properties": {
-                "answer": {
+                "answer_text": {
                     "type": "string",
-                    "description": "The final answer to the query. Note that the graph does not always contain enough information to answer the query. If the graph does not contain enough information, answer 'None'",
+                    "description": "You must provide an answer here if the modality is text. If you do not know the answer, give it your best guess. If the modality is not text, return 'None'",
+                },
+                "answer_binary": {
+                    "type": "boolean",
+                    "description": "You must provide an answer here if the modality is binary. If you do not know the answer, give it your best guess. If the modality is not binary, return False",
+                },
+                "answer_time": {
+                    "type": "string",
+                    "description": "You must provide an answer here if the modality is time. If you do not know the answer, give it your best guess. If the modality is not time, return 'None'",
+                },
+                "answer_node": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "You must provide an answer here if the modality is node. If you do not know the answer, give it your best guess. If the modality is not node, return an empty list []",
                 },
                 "modality": {
                     "type": "string",
@@ -59,7 +72,15 @@ QUERY_RESPONSE_FORMAT: ResponseFormat = {
                     "description": "The explanation to the answer. Clearly state which object nodes, event nodes are involved with their node ID if you use them to generate the answer. Clearly state which edges are involved as well if they are used to generate the answer.",
                 },
             },
-            "required": ["answer", "modality", "confidence", "explanation"],
+            "required": [
+                "answer_text",
+                "answer_binary",
+                "answer_time",
+                "answer_node",
+                "modality",
+                "confidence",
+                "explanation",
+            ],
             "additionalProperties": False,
         },
         "strict": True,
