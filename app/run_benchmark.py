@@ -16,6 +16,7 @@ from egg.language.openai_agent import OpenaiAgent
 from egg.language.ollama_agent import OllamaAgent
 from egg.pruning.strategies import RetrievalStrategy
 from egg.utils.logger import getLogger
+from egg.utils.language_utils import get_gen_answer
 
 logger: logging.Logger = getLogger(
     name=__name__,
@@ -104,7 +105,10 @@ for id, qa_gt in enumerate(tqdm(qa_dataset.qa_ground_truth_list)):
         _, _, gen_data, query_input_tokens, query_output_tokens = (
             processor.process_query(qa_gt.query, qa_gt.modality.name.lower())
         )
-        gen_answer = json.loads(gen_data)["answer"]
+        gen_answer = get_gen_answer(
+            json_string=gen_data, modality=qa_gt.modality.name.lower()
+        )
+        gen_answer_explanation = json.loads(gen_data)["explanation"]
         logger.debug(f"Query {id}: {qa_gt.query}")
         logger.debug(f"modality: {qa_gt.modality.name.lower()}")
         logger.debug(f"Gen answer: {gen_answer}")
@@ -113,6 +117,7 @@ for id, qa_gt in enumerate(tqdm(qa_dataset.qa_ground_truth_list)):
             "modality": qa_gt.modality.name.lower(),
             "gt_answer": qa_gt.answer,
             "gen_answer": gen_answer,
+            "gen_answer_explanation": gen_answer_explanation,
             "input_tokens": query_input_tokens,
             "output_tokens": query_output_tokens,
             "optimal_subgraph": str(processor.serialized_optimal_subgraph),

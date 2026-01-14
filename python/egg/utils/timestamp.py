@@ -19,14 +19,11 @@ def ns_to_datetime(nanoseconds: int) -> datetime:
     dt = datetime.fromtimestamp(seconds)
     return dt
 
+
 def str_to_datetime(date_string: str) -> datetime:
     date_format = "%Y-%m-%d %H:%M:%S"
-    try:
-        datetime_object = datetime.strptime(date_string, date_format)
-        return datetime_object
-    except ValueError as e:
-        print(f"Error parsing date string: {e}")
-        return None
+    datetime_object = datetime.strptime(date_string, date_format)
+    return datetime_object
 
 
 def datetime_to_ns(dt: datetime) -> int:
@@ -43,8 +40,16 @@ def print_timestamped_position(timestamped_position: Dict[int, NDArray]) -> str:
     return output_str
 
 
+def print_object_locations(locations: List[Dict]) -> str:
+    output_str = "\n"
+    for loc_data in locations:
+        output_str += f"\t{ns_to_datetime(loc_data['start'])} - {ns_to_datetime(loc_data['end'])}: {loc_data['location']}\n"
+    return output_str
+
+
 def print_timestamped_observation_odom(
-    timestamped_observation_odom: Dict[int, Dict[str, List]], first_only: bool = True,
+    timestamped_observation_odom: Dict[int, Dict[str, List]],
+    first_only: bool = True,
 ) -> str:
     output_str = "\n"
     for timestamp_ns, odom in timestamped_observation_odom.items():

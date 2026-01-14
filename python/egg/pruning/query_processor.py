@@ -418,18 +418,8 @@ class QueryProcessor:
         self.messages = self.phase_3_prompt
         subgraph = self.egg_slicer.pruned_egg.serialize()
 
-        # NOTE: Involved object ID set by edges, remove to avoid confusion.
-        # Remove timestamped positions to reduce token usage. Not used in this evaluation
-        # For applicactions involving locations, add them back (e.g. object navigation)
         for event_id in subgraph["nodes"]["event_nodes"].keys():
             subgraph["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
-            subgraph["nodes"]["event_nodes"][event_id].pop(
-                "timestamped_observation_odom"
-            )
-        for object_id in subgraph["nodes"]["object_nodes"].keys():
-            subgraph["nodes"]["object_nodes"][object_id]["attributes"].pop(
-                "timestamped_position"
-            )
 
         logger.debug(f"Optimal subgraph: {self.egg_slicer.pruned_egg.pretty_str()}")
 
@@ -486,13 +476,6 @@ class QueryProcessor:
         full_graph_data = self.egg_slicer.egg.serialize()
         for event_id in full_graph_data["nodes"]["event_nodes"].keys():
             full_graph_data["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
-            full_graph_data["nodes"]["event_nodes"][event_id].pop(
-                "timestamped_observation_odom"
-            )
-        for object_id in full_graph_data["nodes"]["object_nodes"].keys():
-            full_graph_data["nodes"]["object_nodes"][object_id]["attributes"].pop(
-                "timestamped_position"
-            )
         self.phase_1_prompt["content"] = self.phase_1_prompt["content"].format(
             full_graph=full_graph_data
         )
