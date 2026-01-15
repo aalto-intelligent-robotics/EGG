@@ -105,9 +105,17 @@ roscd egg/app
 python3 egg_visualizer.py
 ```
 
+To try testing with a query:
+```bash
+roscd egg/app
+python3 graph_pruning.py -q "Enter your query here" -m "Choose one of < text|binary|time_point|node >"
+```
+
 To replicate the information retrieval experiments:
 ```bash
 roscd egg/app
 # Change the strategy, the possible values are ['pruning_unified', 'pruning_unified_no_edge', 'spatial', 'event', 'no_edge', 'full_unified']
-python3 eval.py -s pruning_unified -t 1
+python3 run_benchmark.py -s pruning_unified -t 1
+python3 get_eval_results.py -f <the output file>
+python3 analyze.py -r <the output file> -g <the graph used>
 ```
