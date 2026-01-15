@@ -29,6 +29,9 @@ class EventComponents:
         """
         self._event_nodes = event_nodes
 
+    def is_empty(self) -> bool:
+        return len(self._event_nodes) == 0
+
     def get_num_events(self):        
         """
         Returns the number of event nodes.
@@ -165,16 +168,16 @@ class EventComponents:
                 "timestamped_observation_odom": {},
                 "location": event_node.location,
             }
-            for timestamp, pos in event_node.timestamped_observation_odom.items():
-                timestamp_datetime = ns_to_datetime(timestamp)
-                event_attr["timestamped_observation_odom"].update(
-                    {
-                        str(timestamp_datetime): {
-                            "base_odom": list(pos["base_odom"]),
-                            "camera_odom": list(pos["camera_odom"]),
-                        }
+            timestamp, pos = next(iter(event_node.timestamped_observation_odom.items()))
+            timestamp_datetime = ns_to_datetime(timestamp)
+            event_attr["timestamped_observation_odom"].update(
+                {
+                    str(timestamp_datetime): {
+                        "base_odom": [[round(p, 3) for p in pl] for pl in list(pos["base_odom"])],
+                        "camera_odom": [[round(p, 3) for p in pl] for pl in list(pos["camera_odom"])],
                     }
-                )
+                }
+            )
             event_data.update({event_node.node_id: event_attr})
         return event_data
 

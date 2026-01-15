@@ -14,6 +14,24 @@ logger: logging.Logger = getLogger(
 )
 
 
+def remove_code_blocks(text):
+    # Remove ```json and the corresponding closing ```
+    # Regular expression to match <think>...</think>
+    # return clean    # Find the position of the closing </think> tag
+    closing_think_tag_position = text.find("</think>")
+
+    if closing_think_tag_position != -1:
+        # Extract everything after the closing </think> tag
+        json_text = text[closing_think_tag_position + len("</think>") :].strip()
+    else:
+        # If </think> is not found, return an empty string or original text
+        json_text = text
+
+    json_text = re.sub(r"```json\s*", "", json_text)
+    json_text = re.sub(r"```\s*", "", json_text)
+    return json_text
+
+
 def remove_explanation_and_convert(json_string: str) -> Optional[Dict]:
     lines = json_string.splitlines()
     filtered_lines = [line for line in lines if "explanation" not in line]
@@ -37,3 +55,19 @@ def get_eval_accuracy(json_string: str) -> float:
         "accuracy" in eval_data.keys()
     ), f"Invalid eval data: {eval_data}. 'accuracy' key missing"
     return float(eval_data["accuracy"])
+
+
+def get_gen_answer(json_string: str, modality: str) -> str:
+    gen_data = json.loads(json_string)
+    if modality == "text":
+        gen_answer = gen_data["answer_text"]
+    elif modality == "binary":
+        gen_answer = gen_data["answer_binary"]
+    elif "time" in modality:
+        gen_answer = gen_data["answer_time"]
+    elif modality == "node":
+        gen_answer = gen_data["answer_node"]
+    else:
+        logger.error(f"Invalid modality {modality}")
+        raise ValueError
+    return gen_answer

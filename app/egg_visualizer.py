@@ -4,7 +4,7 @@ import argparse
 
 from egg.utils.visualizer import EGGVisualizer
 from egg.graph.spatial import SpatialComponents
-from egg.graph.event_graph import EventComponents
+from egg.graph.event import EventComponents
 from egg.graph.egg import EGG
 
 PCD_COLOR = [0.2, 0.5, 0.7]

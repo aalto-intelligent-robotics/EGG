@@ -10,7 +10,7 @@ from egg.graph.spatial import SpatialComponents
 from egg.graph.event import EventComponents
 from egg.graph.egg import EGG
 from egg.utils.logger import getLogger
-from egg.language.llm import LLMAgent
+from egg.language.openai_agent import OpenaiAgent
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-a", "--auto", action="store_true")
@@ -61,10 +61,9 @@ for event_param_file in sorted(yaml_files):
     )
 
 egg.gen_room_nodes()
-#
-# llm_agent = LLMAgent(use_mini=False)
-# egg.gen_object_captions(llm_agent=llm_agent)
-#
+llm_agent = OpenaiAgent(use_mini=False)
+egg.gen_object_captions(llm_agent=llm_agent)
+
 logger.info(egg.pretty_str())
 # if use_gt_caption:
 #     graph_filename = "graph_gt.json"

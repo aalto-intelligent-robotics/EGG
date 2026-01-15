@@ -11,7 +11,8 @@ from egg.pruning.strategies import RetrievalStrategy
 from egg.utils.logger import getLogger
 from egg.pruning.egg_slicer import EGGSlicer
 from egg.pruning.query_processor import QueryProcessor
-from egg.language.llm import LLMAgent
+from egg.language.openai_agent import OpenaiAgent
+from egg.language.ollama_agent import OllamaAgent
 
 viz_elements = []
 
@@ -25,28 +26,32 @@ spatial_graph = SpatialComponents()
 event_graph = EventComponents()
 egg = EGG(spatial_graph, event_graph)
 
-egg.deserialize("./graph_gt.json")
-
-# egg.gen_captions(llm_agent=agent)
-# logger.info(egg.pretty_str())
+egg.deserialize("./graph_auto_guided.json")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-q", "--query", type=str)
 parser.add_argument("-m", "--modality", type=str)
 parser.add_argument("--mini", action="store_true")
+parser.add_argument("--model", type=str, default="gpt4")
 args = parser.parse_args()
 
-current_time = datetime.datetime.now()
+current_time = "30th August 2025 23:59:00"
+# current_time = str(datetime.datetime.now())
 query = args.query
 
-agent = LLMAgent(use_mini=args.mini)
+if "gpt" in args.model:
+    llm_agent = OpenaiAgent(use_mini=args.mini, temperature=0.001)
+else:
+    llm_agent = OllamaAgent(model=args.model)
+
 egg_slicer = EGGSlicer(egg=egg)
 processor = QueryProcessor(
     egg_slicer=egg_slicer,
-    llm_agent=agent,
-    retrieval_strategy=RetrievalStrategy.NO_EDGE,
+    current_time=current_time,
+    llm_agent=llm_agent,
+    retrieval_strategy=RetrievalStrategy.PRUNING_UNIFIED,
 )
-phase_1_response, phase_2_response, phase_3_response = processor.process_query(
+phase_1_response, phase_2_response, phase_3_response, _, _ = processor.process_query(
     args.query, args.modality
 )
 logger.info(f"Phase 1: {phase_1_response}")

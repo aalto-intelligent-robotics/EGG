@@ -41,6 +41,9 @@ class SpatialComponents:
         self._map_views = map_views
         self._room_nodes = room_nodes
 
+    def is_empty(self) -> bool:
+        return len(self._object_nodes) == 0
+
     def is_new_node(
         self, new_object_node: ObjectNode, use_gt_id: bool
     ) -> Tuple[bool, int]:
@@ -262,7 +265,7 @@ class SpatialComponents:
             for timestamp, pos in object_node.timestamped_position.items():
                 timestamp_datetime = ns_to_datetime(timestamp)
                 attr_data["timestamped_position"].update(
-                    {str(timestamp_datetime): list(pos)}
+                    {str(timestamp_datetime): [round(p, 3) for p in list(pos)]}
                 )
 
             spatial_data.update({object_node.node_id: {"attributes": attr_data}})

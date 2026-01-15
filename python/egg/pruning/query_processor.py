@@ -3,7 +3,10 @@ import sys
 from typing import Optional, Tuple
 import datetime
 import logging
-from egg.utils.language_utils import remove_explanation_and_convert
+import json
+
+from egg.language.openai_agent import OpenaiAgent
+from egg.utils.language_utils import remove_code_blocks, remove_explanation_and_convert
 
 from egg.pruning.egg_slicer import EGGSlicer
 from egg.language.prompts.pruning_unified_prompts import (
@@ -34,6 +37,12 @@ from egg.language.prompts.no_edge_prompts import (
     NO_EDGE_SYSTEM_PROMPT,
     NO_EDGE_USER_PROMPT,
 )
+from egg.language.prompts.answer_templates import (
+    DEFAULT_NULL_ANSWER_TEMPLATE,
+    PHASE_1_RESPONSE_FORMAT,
+    PHASE_2_RESPONSE_FORMAT,
+    QUERY_RESPONSE_FORMAT,
+)
 from egg.utils.timestamp import datetime_to_ns
 from egg.language.llm import LLMAgent
 from egg.utils.logger import getLogger
@@ -52,6 +61,7 @@ class QueryProcessor:
     A class that processes queries to manipulate EGG using EGGSlicer, leveraging
     large language models (LLM) to perform various information retrieval strategies.
     """
+
     def __init__(
         self,
         egg_slicer: EGGSlicer,
@@ -161,7 +171,7 @@ class QueryProcessor:
         self,
         query: str,
         modality: str,
-    ) -> Tuple[Optional[str], Optional[str], str]:
+    ) -> Tuple[Optional[str], Optional[str], str, int, int]:
         """
         Processes a query to manipulate EGG and retrieve information based on the current strategy.
 
@@ -186,36 +196,69 @@ class QueryProcessor:
             RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE,
         ]:
 
-            phase_1_response_content = self.phase_1()
-            phase_2_response_content = self.phase_2()
-            if self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED:
-                self.messages[0] = {
-                    "role": "system",
-                    "content": deepcopy(PRUNING_UNIFIED_SYSTEM_PROMPT),
-                }
-            elif self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE:
-                self.messages[0] = {
-                    "role": "system",
-                    "content": deepcopy(PRUNING_UNIFIED_NO_EDGE_SYSTEM_PROMPT),
-                }
-            phase_3_response_content = self.phase_3(query=query, modality=modality)
+            phase_1_response_content, input_tokens, output_tokens = self.phase_1()
+            if self.egg_slicer.pruned_egg.is_empty():
+                logger.warning(
+                    "Sliced EGG is empty after phase 1, returning None answer."
+                )
+                phase_2_response_content = None
+                phase_3_response_content = DEFAULT_NULL_ANSWER_TEMPLATE.format(
+                    modality=modality
+                )
+
+            else:
+                phase_2_response_content, input_tokens_2, output_tokens_2 = (
+                    self.phase_2()
+                )
+                input_tokens += input_tokens_2
+                output_tokens += output_tokens_2
+
+                if self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED:
+                    self.messages[0] = {
+                        "role": "system",
+                        "content": deepcopy(PRUNING_UNIFIED_SYSTEM_PROMPT),
+                    }
+                elif (
+                    self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE
+                ):
+                    self.messages[0] = {
+                        "role": "system",
+                        "content": deepcopy(PRUNING_UNIFIED_NO_EDGE_SYSTEM_PROMPT),
+                    }
+
+                if self.egg_slicer.pruned_egg.is_empty():
+                    logger.warning(
+                        "Sliced EGG is empty after phase 2, returning None answer."
+                    )
+                    phase_3_response_content = DEFAULT_NULL_ANSWER_TEMPLATE.format(
+                        modality=modality
+                    )
+                else:
+                    phase_3_response_content, input_tokens_3, output_tokens_3 = (
+                        self.phase_3(query=query, modality=modality)
+                    )
+                    input_tokens += input_tokens_3
+                    output_tokens += output_tokens_3
+
             return (
                 phase_1_response_content,
                 phase_2_response_content,
                 phase_3_response_content,
+                input_tokens,
+                output_tokens,
             )
         elif self.retrieval_strategy == RetrievalStrategy.SPATIAL_ONLY:
-            response_content = self.spatial_only()
-            return None, None, response_content
+            response_content, input_tokens, output_tokens = self.spatial_only()
+            return None, None, response_content, input_tokens, output_tokens
         elif self.retrieval_strategy == RetrievalStrategy.EVENT_ONLY:
-            response_content = self.event_only()
-            return None, None, response_content
+            response_content, input_tokens, output_tokens = self.event_only()
+            return None, None, response_content, input_tokens, output_tokens
         elif self.retrieval_strategy == RetrievalStrategy.NO_EDGE:
-            response_content = self.no_edge()
-            return None, None, response_content
+            response_content, input_tokens, output_tokens = self.no_edge()
+            return None, None, response_content, input_tokens, output_tokens
         else:
-            response_content = self.full_graph()
-            return None, None, response_content
+            response_content, input_tokens, output_tokens = self.full_graph()
+            return None, None, response_content, input_tokens, output_tokens
 
     def add_response(self, response: str):
         """
@@ -236,7 +279,7 @@ class QueryProcessor:
         )
         self.messages.append(self.phase_1_prompt)
 
-    def phase_1(self) -> str:
+    def phase_1(self) -> Tuple[str, int, int]:
         """
         Executes phase 1 of the query process.
 
@@ -244,46 +287,59 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_1_message()
-        phase_1_response_content = self.agent.send_query(
-            self.messages, count_tokens=True
-        )
+        if isinstance(self.agent, OpenaiAgent):
+            phase_1_response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=PHASE_1_RESPONSE_FORMAT,
+                )
+            )
+            phase_1_response_dict = json.loads(str(phase_1_response_content))
+            phase_1_response_dict.pop("explanation_time")
+            phase_1_response_dict.pop("explanation_locations")
+        else:
+            # TODO: implement structured outputs for open-source models
+            phase_1_response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
+            phase_1_response_dict = remove_explanation_and_convert(
+                remove_code_blocks(phase_1_response_content)
+            )
+            assert phase_1_response_dict is not None
+            phase_1_response_dict = phase_1_response_dict[0]
+        logger.debug(f"Phase 1: {phase_1_response_dict}")
         assert phase_1_response_content is not None
-        logger.debug(phase_1_response_content)
-        phase_1_response_dict = remove_explanation_and_convert(phase_1_response_content)
-        assert phase_1_response_dict is not None
-        if phase_1_response_dict[0]["start_year"] != 0:
+        if phase_1_response_dict["start_year"] != 0:
             self.min_timestamp = datetime_to_ns(
                 datetime.datetime(
-                    phase_1_response_dict[0]["start_year"],
-                    phase_1_response_dict[0]["start_month"],
-                    phase_1_response_dict[0]["start_day"],
-                    phase_1_response_dict[0]["start_hour"],
-                    phase_1_response_dict[0]["start_minute"],
+                    phase_1_response_dict["start_year"],
+                    phase_1_response_dict["start_month"],
+                    phase_1_response_dict["start_day"],
+                    phase_1_response_dict["start_hour"],
+                    phase_1_response_dict["start_minute"],
                 )
             )
         else:
             self.min_timestamp = 0
-        if phase_1_response_dict[0]["end_year"] != "inf":
-            self.max_timestamp = datetime_to_ns(
-                datetime.datetime(
-                    phase_1_response_dict[0]["end_year"],
-                    phase_1_response_dict[0]["end_month"],
-                    phase_1_response_dict[0]["end_day"],
-                    phase_1_response_dict[0]["end_hour"],
-                    phase_1_response_dict[0]["end_minute"],
-                )
+        self.max_timestamp = datetime_to_ns(
+            datetime.datetime(
+                phase_1_response_dict["end_year"],
+                phase_1_response_dict["end_month"],
+                phase_1_response_dict["end_day"],
+                phase_1_response_dict["end_hour"],
+                phase_1_response_dict["end_minute"],
             )
-        else:
-            self.max_timestamp = sys.maxsize
+        )
         self.egg_slicer.prune_graph_by_time_range(
             min_timestamp=self.min_timestamp,
             max_timestamp=self.max_timestamp,
         )
         self.egg_slicer.prune_graph_by_location(
-            locations_list=phase_1_response_dict[0]["locations"]
+            locations_list=phase_1_response_dict["locations"]
         )
         self.add_response(phase_1_response_content)
-        return phase_1_response_content
+        return phase_1_response_content, input_tokens, output_tokens
 
     def set_phase_2_message(self):
         """
@@ -302,7 +358,7 @@ class QueryProcessor:
             )
         self.messages.append(self.phase_2_prompt)
 
-    def phase_2(self) -> str:
+    def phase_2(self) -> Tuple[str, int, int]:
         """
         Executes phase 2 of the query process, refining results using objects and events.
 
@@ -310,19 +366,34 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_2_message()
-        phase_2_response_content = self.agent.send_query(
-            self.messages, count_tokens=True
-        )
+        if isinstance(self.agent, OpenaiAgent):
+            phase_2_response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=PHASE_2_RESPONSE_FORMAT,
+                )
+            )
+            phase_2_response_dict = json.loads(str(phase_2_response_content))
+            phase_2_response_dict.pop("explanation_objects")
+            phase_2_response_dict.pop("explanation_events")
+        else:
+            phase_2_response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
+            phase_2_response_dict = remove_explanation_and_convert(
+                remove_code_blocks(phase_2_response_content)
+            )
+            assert phase_2_response_dict is not None
+            phase_2_response_dict = phase_2_response_dict[0]
         assert phase_2_response_content is not None
-        logger.debug(phase_2_response_content)
-        phase_2_response_dict = remove_explanation_and_convert(phase_2_response_content)
-        assert phase_2_response_dict is not None
+        logger.debug(f"Phase 2: {phase_2_response_dict}")
         if self.retrieval_strategy in [
             RetrievalStrategy.PRUNING_UNIFIED,
             RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE,
         ]:
-            relevant_object_ids = phase_2_response_dict[0]["object_nodes"]
-            relevant_event_ids = phase_2_response_dict[0]["event_nodes"]
+            relevant_object_ids = phase_2_response_dict["object_nodes"]
+            relevant_event_ids = phase_2_response_dict["event_nodes"]
 
             self.egg_slicer.reset_pruned_egg()
             self.egg_slicer.merge_events_and_objects(
@@ -333,7 +404,7 @@ class QueryProcessor:
             )
 
             self.add_response(phase_2_response_content)
-        return phase_2_response_content
+        return phase_2_response_content, input_tokens, output_tokens
 
     def set_phase_3_message(self, query: str, modality: str):
         """
@@ -346,23 +417,29 @@ class QueryProcessor:
         """
         self.messages = self.phase_3_prompt
         subgraph = self.egg_slicer.pruned_egg.serialize()
+
         for event_id in subgraph["nodes"]["event_nodes"].keys():
             subgraph["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
+
         logger.debug(f"Optimal subgraph: {self.egg_slicer.pruned_egg.pretty_str()}")
+
         self.messages[0]["content"] = self.messages[0]["content"].format(
             current_time=self.current_time, query=query, modality=modality
         )
+
+        # Remove edges for no_edge strategy
         if self.retrieval_strategy == RetrievalStrategy.PRUNING_UNIFIED_NO_EDGE:
             subgraph.pop("edges")
-            # for event_id in subgraph["nodes"]["event_nodes"].keys():
-            #     subgraph["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
+
         self.serialized_optimal_subgraph = subgraph
+
         logger.debug(f"Optimal subgraph serialized: {self.serialized_optimal_subgraph}")
+
         self.messages[-1]["content"] = self.messages[-1]["content"].format(
             subgraph=self.serialized_optimal_subgraph
         )
 
-    def phase_3(self, query: str, modality: str) -> str:
+    def phase_3(self, query: str, modality: str) -> Tuple[str, int, int]:
         """
         Executes phase 3 of the query process, finalizing the optimal subgraph serialization.
 
@@ -374,35 +451,54 @@ class QueryProcessor:
         :rtype: str
         """
         self.set_phase_3_message(query=query, modality=modality)
-        phase_3_response_content = self.agent.send_query(
-            self.messages, count_tokens=True
-        )
+        if isinstance(self.agent, OpenaiAgent):
+            phase_3_response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=QUERY_RESPONSE_FORMAT,
+                )
+            )
+        else:
+            phase_3_response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
         assert phase_3_response_content is not None
-        logger.debug(phase_3_response_content)
-        return phase_3_response_content
+        return phase_3_response_content, input_tokens, output_tokens
 
-    def full_graph(self) -> str:
+    def full_graph(self) -> Tuple[str, int, int]:
         """
-        Retrieves and processes the full graph, removing object involvement to focus on events.
+        Retrieves and processes the full graph.
 
         :returns: Response content from full graph processing.
         :rtype: str
         """
         full_graph_data = self.egg_slicer.egg.serialize()
+        for event_id in full_graph_data["nodes"]["event_nodes"].keys():
+            full_graph_data["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
         self.phase_1_prompt["content"] = self.phase_1_prompt["content"].format(
             full_graph=full_graph_data
         )
-        for event_id in full_graph_data["nodes"]["event_nodes"].keys():
-            full_graph_data["nodes"]["event_nodes"][event_id].pop("involved_object_ids")
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.send_query(self.messages, count_tokens=True)
+        if isinstance(self.agent, OpenaiAgent):
+            response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=QUERY_RESPONSE_FORMAT,
+                )
+            )
+        else:
+            response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
-        return response_content
+        return response_content, input_tokens, output_tokens
 
-    def spatial_only(self) -> str:
+    def spatial_only(self) -> Tuple[str, int, int]:
         """
         Execute SPATIAL_ONLY strategy: EGG with only spatial component.
 
@@ -417,13 +513,24 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.send_query(self.messages, count_tokens=True)
+        if isinstance(self.agent, OpenaiAgent):
+            response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=QUERY_RESPONSE_FORMAT,
+                )
+            )
+        else:
+            response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
-        return response_content
+        return response_content, input_tokens, output_tokens
 
-    def event_only(self) -> str:
+    def event_only(self) -> Tuple[str, int, int]:
         """
         Execute EVENT_ONLY strategy: EGG with only event component.
 
@@ -440,13 +547,24 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.send_query(self.messages, count_tokens=True)
+        if isinstance(self.agent, OpenaiAgent):
+            response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=QUERY_RESPONSE_FORMAT,
+                )
+            )
+        else:
+            response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
-        return response_content
+        return response_content, input_tokens, output_tokens
 
-    def no_edge(self) -> str:
+    def no_edge(self) -> Tuple[str, int, int]:
         """
         Execute NO_EDGE strategy: EGG without edges connecting spatial and event components.
 
@@ -462,11 +580,22 @@ class QueryProcessor:
         )
         logger.debug(f"Graph data: {full_graph_data}")
         self.messages = [self.system_prompt, self.phase_1_prompt]
-        response_content = self.agent.send_query(self.messages, count_tokens=True)
+        if isinstance(self.agent, OpenaiAgent):
+            response_content, input_tokens, output_tokens = (
+                self.agent.query_with_structured_output(
+                    llm_message=self.messages,
+                    count_tokens=True,
+                    response_format=QUERY_RESPONSE_FORMAT,
+                )
+            )
+        else:
+            response_content, input_tokens, output_tokens = self.agent.query(
+                self.messages, count_tokens=True
+            )
         assert response_content is not None
         logger.debug(response_content)
         self.serialized_optimal_subgraph = full_graph_data
-        return response_content
+        return response_content, input_tokens, output_tokens
 
     def get_used_tokens(self) -> Tuple[int, int]:
         """
