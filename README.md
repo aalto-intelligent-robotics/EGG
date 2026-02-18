@@ -1,4 +1,4 @@
-# 🥚🍳 Event-Grounding Graph (EGG)
+# 🥚🐣🐥 Event-Grounding Graph (EGG)
 
 > **:warning: Warning**<br>
 > This repository and some of its requirements are under active development, so bugs and breaking changes are expected.
@@ -55,9 +55,9 @@ We tested EGG on a laptop with an RTX 3070 GPU Mobile.
 
 If you do not want to use Docker for some reason, EGG was tested on Ubuntu 20.04. The other requirements are:
 
-- We recommend uv for Python package managing. Instructions could be found [here](https://docs.astral.sh/uv/getting-started/installation/)
 - [VideoRefer](https://github.com/DAMO-NLP-SG/VideoRefer) (if you want to automatically generate video captions, otherwise you can use the provided ground truth data)
 - OpenAI AI API key (for graph pruning, evaluation, and generating image captions)
+- We recommend uv for Python package managing. Instructions could be found [here](https://docs.astral.sh/uv/getting-started/installation/)
 
 *TODO: Instructions for setting up with uv coming soon*
 
@@ -83,7 +83,7 @@ If you want to generate video captions automatically, you need to set up VideoRe
 ```bash
 mkdir third_party/
 cd third_party
-git clone git@github.com:DAMO-NLP-SG/VideoRefer.git
+git clone git@github.com:phuoc101/PixelRefer.git
 cd ..
 ```
 
@@ -140,7 +140,7 @@ roscd egg/app
 python3 graph_pruning.py -q "Enter your query here" -m "Choose one of < text|binary|time_point|node >"
 ```
 
-To replicate the information retrieval experiments:
+To run the information retrieval benchmarks:
 
 ```bash
 roscd egg/app
