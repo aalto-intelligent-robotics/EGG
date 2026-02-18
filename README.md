@@ -3,6 +3,10 @@
 > **:warning: Warning**<br>
 > This repository and some of its requirements are under active development, so bugs and breaking changes are expected.
 
+## News
+
+- **14/02/2025:** Our paper got accepted to RA-L 🥳
+
 ## 🚀 Overview
 
 <div align="center">
@@ -23,9 +27,25 @@ using real robotic data demonstrate EGG’s capability to re-
 trieve relevant information and respond accurately to human
 inquiries concerning the environment
 
-**Authors:** Anonymous
+**Authors:** Phuoc Nguyen, Francesco Verdoja, Ville Kyrki
+
+**Affiliation:** Intelligent Robotics Group, School of Electrical Engineering, Aalto University
 
 The prompts that are used for Generative AI are available [here](./Appendix.md)
+
+If you find this code relevant for your work, please consider citing our paper. A bibtex entry is provided below:
+
+```bibtex
+@misc{nguyen2026eventgroundinggraphunifiedspatiotemporal,
+      title={Event-Grounding Graph: Unified Spatio-Temporal Scene Graph from Robotic Observations}, 
+      author={Phuoc Nguyen and Francesco Verdoja and Ville Kyrki},
+      year={2026},
+      eprint={2510.18697},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2510.18697}, 
+}
+```
 
 ## 🤖 Requirements
 
@@ -33,10 +53,13 @@ We tested EGG on a laptop with an RTX 3070 GPU Mobile.
 
 🐳 We highly recommend using Docker for deploying EGG. We provide pre-built Dockerfiles here (https://github.com/aalto-intelligent-robotics/EGG-docker)
 
-If you do not want to use Docker for some reason, EGG was tested on Ubuntu 20.04 with ROS Noetic installed. Follow the instructions [here](https://wiki.ros.org/ROS/Installation) if you do not yet have it on your system. The other requirements are:
+If you do not want to use Docker for some reason, EGG was tested on Ubuntu 20.04. The other requirements are:
 
+- We recommend uv for Python package managing. Instructions could be found [here](https://docs.astral.sh/uv/getting-started/installation/)
 - [VideoRefer](https://github.com/DAMO-NLP-SG/VideoRefer) (if you want to automatically generate video captions, otherwise you can use the provided ground truth data)
 - OpenAI AI API key (for graph pruning, evaluation, and generating image captions)
+
+*TODO: Instructions for setting up with uv coming soon*
 
 ## 🧰 Building EGG
 
@@ -65,6 +88,7 @@ cd ..
 ```
 
 Now build the docker image:
+
 ```bash
 docker compose build base
 ```
@@ -79,14 +103,17 @@ docker exec -it egg_base bash
 ```
 
 # Data processing
-This part of the repository is anonymized during the double-blind review process.
+
+*TODO: Coming Soon*
 
 ## 🔥 Quickstart
+
 To start with EGG, you need to set up the data as folowed:
 
 *Note: The dataset will be made public after the double-blind review process*
 
 To build EGG, use one of the following:
+
 ```bash
 roscd egg/app
 # To build a graph from ground truth
@@ -100,18 +127,21 @@ python3 build_graph.py -a -u
 The result will be a json file, e.g., "graph_gt.json"
 
 To visualize EGG, make sure you have open3d installed and run:
+
 ```bash
 roscd egg/app
 python3 egg_visualizer.py
 ```
 
 To try testing with a query:
+
 ```bash
 roscd egg/app
 python3 graph_pruning.py -q "Enter your query here" -m "Choose one of < text|binary|time_point|node >"
 ```
 
 To replicate the information retrieval experiments:
+
 ```bash
 roscd egg/app
 # Change the strategy, the possible values are ['pruning_unified', 'pruning_unified_no_edge', 'spatial', 'event', 'no_edge', 'full_unified']
