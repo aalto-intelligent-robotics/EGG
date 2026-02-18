@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Union
 import yaml
-import tf.transformations as tr
+from scipy.spatial.transform import Rotation as R
 import cv2
 import numpy as np
 from numpy.typing import NDArray
@@ -55,7 +55,7 @@ class Camera:
     cy: float
     width: int
     height: int
-    T: NDArray = np.eye(4)
+    transformation_matrix: NDArray[np.float32] = np.eye(4).astype(np.float32)
 
     @staticmethod
     def from_yaml(yaml_file: str):
@@ -82,10 +82,10 @@ class Camera:
             cy=camera_info["cy"],
             width=camera_info["width"],
             height=camera_info["height"],
-            T=np.eye(4),
+            transformation_matrix=np.eye(4).astype(np.float32),
         )
 
-    def set_T(self, position: NDArray, orientation: NDArray):
+    def set_T(self, position: NDArray[np.float32], orientation: NDArray[np.float32]):
         """
         Sets the camera's extrinsic transformation matrix using given position and
         orientation.
@@ -95,15 +95,16 @@ class Camera:
         :param orientation: Quaternion representing camera orientation.
         :type orientation: NDArray
         """
-        transformation_matrix = tr.quaternion_matrix(orientation)
+        transformation_matrix = np.eye(4).astype(np.float32)
+        transformation_matrix[:3, :3] = R.from_quat(orientation).as_matrix()
         transformation_matrix[:3, 3] = position
-        self.T = transformation_matrix
+        self.transformation_matrix = transformation_matrix
 
     def depth_to_pointcloud(
         self,
         depth_image: NDArray[np.float32],
         mask: Union[NDArray[np.uint8], None] = None,
-    ) -> NDArray:
+    ) -> NDArray[np.float32]:
         """
         Converts a depth image to a 3D point cloud using the camera's intrinsic parameters.
 
@@ -128,7 +129,7 @@ class Camera:
         if rows != self.height or cols != self.width:
             raise AssertionError(
                 f"Depth image dimensions ({cols}, {rows}) do not match camera model "
-                f"dimensions ({self.width}, {self.height})"
+                + f"dimensions ({self.width}, {self.height})"
             )
         # Apply mask to the depth image if provided
         processed_depth = cv2.bitwise_and(depth_image, depth_image, mask=mask)
@@ -158,7 +159,7 @@ class Camera:
         )
 
         # Apply the extrinsic transformation matrix to compute world coordinates
-        world_coordinates = self.T @ homogeneous_coordinates
+        world_coordinates = self.transformation_matrix @ homogeneous_coordinates
 
         # Return 3D points by extracting the x, y, z components
         point_cloud = world_coordinates[:3].T

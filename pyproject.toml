@@ -1,0 +1,52 @@
+[build-system]
+requires = ["uv_build >= 0.10.0, <0.11.0"]
+build-backend = "uv_build"
+
+[project]
+name = "egg"
+version = "0.1.a1"
+authors = [
+  { name = "Thuan-Phuoc Nguyen", email = "nguyenthuanphuoc101@protonmail.com" },
+]
+description = "Release of Event-Grounding Graph (EGG)"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+dependencies = [
+  "numpy==1.24.4",
+  "opencv-python==4.6.0.66",
+  "torch==2.3.0",
+  "torchvision==0.18.0",
+  "open3d==0.19.0",
+  "scipy==1.13.1",
+  "tiktoken==0.12.0",
+  "openai==2.14.0",
+  "pandas==2.0.0",
+  "ffmpeg-python==0.2.0",
+  "videorefer==1.0",
+  "langchain==0.3.27",
+  "langchain-community==0.3.16",
+  "langchain-core==0.3.81",
+  "langchain-nvidia-ai-endpoints==0.3.19",
+  "langchain-ollama==0.3.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/aalto-intelligent-robotics/EGG"
+Issues = "https://github.com/aalto-intelligent-robotics/EGG/issues"
+
+[tool.setuptools.packages.find]
+exclude = ["app", "assets*", "configs"]
+
+[tool.wheel]
+exclude = ["app", "assets*", "configs"]
+
+[tool.uv.workspace]
+members = ["."]
+[tool.uv]
+package = true

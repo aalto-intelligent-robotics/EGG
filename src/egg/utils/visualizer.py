@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import re
 from typing import Optional, List, Tuple
-import tf.transformations as tr
+from scipy.spatial.transform import Rotation as R
 import numpy as np
 from numpy.typing import NDArray
 import open3d as o3d
@@ -322,14 +322,14 @@ class EGGVisualizer:
         end_timestamp = event_node.end
         obs_odom = event_node.get_first_observation_odom()
         cam_pos = np.array(obs_odom["camera_odom"][0])
-        cam_orientation = tr.quaternion_matrix(
-            quaternion=np.array(obs_odom["camera_odom"][1])
-        )[:3, :3]
+        cam_orientation = R.from_quat(
+            np.array(obs_odom["camera_odom"][1])
+        ).as_matrix()
 
         base_pos = np.array(obs_odom["base_odom"][0])
-        base_orientation = tr.quaternion_matrix(
-            quaternion=np.array(obs_odom["base_odom"][1])
-        )[:3, :3]
+        base_orientation = R.from_quat(
+            np.array(obs_odom["base_odom"][1])
+        ).as_matrix()
 
         room_node = self.egg.spatial.get_room_node_by_name(event_node.location)
         assert room_node is not None

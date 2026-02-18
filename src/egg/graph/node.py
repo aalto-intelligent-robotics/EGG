@@ -3,7 +3,6 @@ import sys
 from typing import Dict, List, Optional
 import numpy as np
 from numpy.typing import NDArray
-import torch
 import logging
 
 from egg.utils.logger import getLogger
@@ -170,7 +169,6 @@ class ObjectNode(SpatialNode):
     :param timestamped_position: Position data indexed by timestamps.
     :type timestamped_position: Dict[int, np.ndarray]
     :param visual_embedding: [Optional] A visual embedding tensor.
-    :type visual_embedding: Optional[torch.Tensor]
     :param instance_views: List of visual observations of the object.
     :type instance_views: List[np.ndarray]
     :param caption: [Optional] A textual description of the object.
@@ -178,7 +176,6 @@ class ObjectNode(SpatialNode):
     """
     object_class: str
     timestamped_position: Dict[int, NDArray]
-    visual_embedding: Optional[torch.Tensor] = None
     instance_views: List[NDArray] = field(default_factory=list)
     caption: Optional[str] = None
 
