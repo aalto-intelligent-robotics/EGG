@@ -32,7 +32,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-q", "--query", type=str)
 parser.add_argument("-m", "--modality", type=str)
 parser.add_argument("--mini", action="store_true")
-parser.add_argument("--model", type=str, default="gpt4")
+parser.add_argument("--model", type=str, default="gpt-4o")
+parser.add_argument("--aalto", action="store_true")
 args = parser.parse_args()
 
 current_time = "30th August 2025 23:59:00"
@@ -40,7 +41,9 @@ current_time = "30th August 2025 23:59:00"
 query = args.query
 
 if "gpt" in args.model:
-    llm_agent = OpenaiAgent(use_mini=args.mini, temperature=0.001)
+    llm_agent = OpenaiAgent(
+        use_mini=args.mini, temperature=0.001, model_name=args.model, aalto=args.aalto
+    )
 else:
     llm_agent = OllamaAgent(model=args.model)
 

@@ -25,7 +25,6 @@ if __name__ == "__main__":
     egg = EGG(spatial_graph, event_graph)
     egg.deserialize(args.file)
     egg.gen_room_nodes()
-    # Customize these as needed:
 
     vis = EGGVisualizer(
         egg=egg,

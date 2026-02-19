@@ -23,48 +23,54 @@ class OpenaiAgent(LLMAgent):
         self,
         use_gpt4: bool = True,
         use_mini: bool = False,
+        aalto: bool = False,
+        model_name = "gpt-4o",
         *args,
         **kwargs,
     ):
         super(OpenaiAgent, self).__init__(*args, **kwargs)
-        if use_gpt4:
-            if use_mini:
-                base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4o-mini-2024-07-18"
-                logger.info(f"🧠 Using GPT4o-mini from {base_url}")
+        self.aalto = aalto
+        if self.aalto:
+            if use_gpt4:
+                if use_mini:
+                    base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4o-mini-2024-07-18"
+                    logger.info(f"🧠 Using GPT4o-mini from {base_url}")
+                else:
+                    base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4o-2024-11-20"
+                    logger.info(f"🧠 Using GPT4 from {base_url}")
+                openai_endpoint_url = "/chat/completions"
             else:
-                # base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/gpt4o"
-                base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4o-2024-11-20"
-                # base_url = "https://aalto-openai-apigw.azure-api.net/v1/openai/deployments/gpt-4.1-2025-04-14"
-                logger.info(f"🧠 Using GPT4 from {base_url}")
-            openai_endpoint_url = "/chat/completions"
+                base_url = "https://aalto-openai-apigw.azure-api.net"
+                openai_endpoint_url = "/v1/chat/gpt-35-turbo-1106"
+                logger.info(f"🧠 Using GPT3.5")
+
+            # Set API key in terminal: export AALTO_OPENAI_API_KEY=""
+            api_key = os.environ.get("AALTO_OPENAI_API_KEY")
+            assert (
+                api_key is not None
+            ), "you must set the `AALTO_OPENAI_API_KEY` environment variable."
+            """
+            Rewrite the base path with Aalto mappings
+            For all endpoints see https://www.aalto.fi/en/services/azure-openai#6-available-api-s
+            """
+
+            def update_base_url(request: httpx.Request) -> None:
+                if request.url.path == "/chat/completions":
+                    request.url = request.url.copy_with(path=openai_endpoint_url)
+
+            self._model = OpenAI(
+                base_url=base_url,
+                api_key="False",  # API key not used, and rather set below
+                default_headers={
+                    "Ocp-Apim-Subscription-Key": api_key,
+                },
+                http_client=httpx.Client(event_hooks={"request": [update_base_url]}),
+            )
         else:
-            base_url = "https://aalto-openai-apigw.azure-api.net"
-            openai_endpoint_url = "/v1/chat/gpt-35-turbo-1106"
-            logger.info(f"🧠 Using GPT3.5")
-
-        # Set API key in terminal: export AALTO_OPENAI_API_KEY=""
-        api_key = os.environ.get("AALTO_OPENAI_API_KEY")
-        assert (
-            api_key is not None
-        ), "you must set the `AALTO_OPENAI_API_KEY` environment variable."
-
-        """
-        Rewrite the base path with Aalto mappings
-        For all endpoints see https://www.aalto.fi/en/services/azure-openai#6-available-api-s
-        """
-
-        def update_base_url(request: httpx.Request) -> None:
-            if request.url.path == "/chat/completions":
-                request.url = request.url.copy_with(path=openai_endpoint_url)
-
-        self._model = OpenAI(
-            base_url=base_url,
-            api_key="False",  # API key not used, and rather set below
-            default_headers={
-                "Ocp-Apim-Subscription-Key": api_key,
-            },
-            http_client=httpx.Client(event_hooks={"request": [update_base_url]}),
-        )
+            self.model_name = model_name
+            self._model = OpenAI(
+                api_key=os.environ.get("OPENAI_API_KEY"),
+            )
 
     def query(
         self,
@@ -72,8 +78,12 @@ class OpenaiAgent(LLMAgent):
         count_tokens: bool = False,
     ) -> Tuple[Optional[str], int, int]:
         # Send query
+        if self.aalto:
+            model_name = "no_effect"
+        else:
+            model_name = self.model_name
         completion = self._model.chat.completions.create(
-            model="no_effect",  # the model variable must be set, but has no effect, model selection done with URL
+            model=model_name,  # the model variable must be set, but has no effect, model selection done with URL
             messages=llm_message,
             temperature=self.temperature,
         )
@@ -106,8 +116,12 @@ class OpenaiAgent(LLMAgent):
         count_tokens: bool = False,
     ) -> Tuple[Optional[str], int, int]:
         # Send query
+        if self.aalto:
+            model_name = "no_effect"
+        else:
+            model_name = self.model_name
         completion = self._model.chat.completions.create(
-            model="no_effect",  # the model variable must be set, but has no effect, model selection done with URL
+            model=model_name,  # the model variable must be set, but has no effect, model selection done with URL
             messages=llm_message,
             temperature=self.temperature,
             response_format=response_format,

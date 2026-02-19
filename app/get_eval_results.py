@@ -22,12 +22,13 @@ logger: logging.Logger = getLogger(
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--file", default="./eval_trial_1_remembr_model_gpt-4o.json")
+parser.add_argument("--aalto", action="store_true")
 args = parser.parse_args()
 
 with open(args.file, "r") as f:
     benchmark_data: Dict = json.load(f)
 
-llm_agent = OpenaiAgent()
+llm_agent = OpenaiAgent(aalto=args.aalto)
 evaluator = EGGEvaluator(llm_agent=llm_agent)
 
 accuracy_list = []

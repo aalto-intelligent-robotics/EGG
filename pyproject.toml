@@ -40,13 +40,11 @@ dependencies = [
 Homepage = "https://github.com/aalto-intelligent-robotics/EGG"
 Issues = "https://github.com/aalto-intelligent-robotics/EGG/issues"
 
-[tool.setuptools.packages.find]
-exclude = ["app", "assets*", "configs"]
-
 [tool.wheel]
 exclude = ["app", "assets*", "configs"]
 
 [tool.uv.workspace]
 members = ["."]
+
 [tool.uv]
 package = true

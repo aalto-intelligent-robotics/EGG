@@ -31,7 +31,8 @@ parser.add_argument("-a", "--auto", action="store_true")
 parser.add_argument("-u", "--unguided", action="store_true")
 parser.add_argument("--mini", action="store_true")
 parser.add_argument("-t", "--trial", type=int, default=1)
-parser.add_argument("--model", type=str, default="gpt4")
+parser.add_argument("--model", type=str, default="gpt-4o")
+parser.add_argument("--aalto", action="store_true")
 args = parser.parse_args()
 
 spatial_graph = SpatialComponents()
@@ -52,7 +53,9 @@ qa_file = "/home/ros/data/egg_qa_remembr.csv"
 qa_dataset = QADataset(qa_file=qa_file, egg=egg)
 
 if "gpt" in args.model:
-    llm_agent = OpenaiAgent(use_mini=args.mini, temperature=0.001)
+    llm_agent = OpenaiAgent(
+        use_mini=args.mini, temperature=0.001, model_name=args.model, aalto=args.aalto
+    )
 else:
     llm_agent = OllamaAgent(model=args.model)
 

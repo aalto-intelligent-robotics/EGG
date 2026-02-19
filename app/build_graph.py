@@ -3,7 +3,6 @@
 import glob
 import os
 import logging
-import json
 import argparse
 
 from egg.graph.spatial import SpatialComponents
@@ -14,7 +13,9 @@ from egg.language.openai_agent import OpenaiAgent
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-a", "--auto", action="store_true")
+parser.add_argument("--aalto", action="store_true")
 parser.add_argument("-u", "--unguided", action="store_true")
+parser.add_argument("-d", "--data-path", default="/home/ros/data/")
 args = parser.parse_args()
 
 viz_elements = []
@@ -38,13 +39,13 @@ egg = EGG(
 )
 
 event_dirs = [
-    "/home/ros/data/coffee_room_events/batch_1/events_gt/",
-    "/home/ros/data/coffee_room_events/batch_2/events_gt/",
-    "/home/ros/data/coffee_room_events/batch_3/events_gt/",
-    "/home/ros/data/coffee_room_events/batch_4/events_gt/",
-    "/home/ros/data/coffee_room_events/batch_5/events_gt/",
-    "/home/ros/data/coffee_room_events/batch_6/events_gt/",
-    "/home/ros/data/coffee_room_events/batch_7/events_gt/",
+    f"{args.data_path}/batch_1/",
+    f"{args.data_path}/batch_2/",
+    f"{args.data_path}/batch_3/",
+    f"{args.data_path}/batch_4/",
+    f"{args.data_path}/batch_5/",
+    f"{args.data_path}/batch_6/",
+    f"{args.data_path}/batch_7/",
 ]
 
 yaml_files = []
@@ -61,15 +62,7 @@ for event_param_file in sorted(yaml_files):
     )
 
 egg.gen_room_nodes()
-llm_agent = OpenaiAgent(use_mini=False)
+llm_agent = OpenaiAgent(use_mini=False, aalto=args.aalto)
 egg.gen_object_captions(llm_agent=llm_agent)
 
 logger.info(egg.pretty_str())
-# if use_gt_caption:
-#     graph_filename = "graph_gt.json"
-# elif use_guided_auto_caption:
-#     graph_filename = "graph_auto_guided.json"
-# else:
-#     graph_filename = "graph_auto_unguided.json"
-# with open(graph_filename, "w") as f:
-#     json.dump(egg.serialize(), f)
