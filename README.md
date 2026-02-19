@@ -5,7 +5,7 @@
 
 ## News
 
-- **19/02/2025:** Dataset released on HuggingFace 🤗: https://huggingface.co/datasets/phuoc101/EGG-Dataset
+- **19/02/2025:** [Our dataset](https://huggingface.co/datasets/phuoc101/EGG-Dataset) is released on HuggingFace 🤗 
 
 - **14/02/2025:** Our paper got accepted to RA-L 🥳
 
@@ -15,19 +15,7 @@
     <img src="./assets/shortclip_ral2025.gif">
 </div>
 
-**Abstract:** A fundamental aspect for building intelligent autonomous
-robots that can assist humans in their daily lives is the
-construction of rich environmental representations. While advances in
-semantic scene representations have enriched robotic
-scene understanding, current approaches lack a connection
-between the spatial features and dynamic event interactions.
-In this work, we introduce event-grounding graph (EGG), a
-framework grounding event interactions to spatial features of
-a scene. This representation allows robots to perceive, reason,
-and respond to complex spatio-temporal queries. Experiments
-using real robotic data demonstrate EGG’s capability to re-
-trieve relevant information and respond accurately to human
-inquiries concerning the environment
+**Abstract:** A fundamental aspect for building intelligent autonomous robots that can assist humans in their daily lives is the construction of rich environmental representations. While advances in semantic scene representations have enriched robotic scene understanding, current approaches lack a connection between the spatial features and dynamic event interactions. In this work, we introduce Event-Grounding Graph (EGG), a framework grounding event interactions to spatial features of a scene. This representation allows robots to perceive, reason, and respond to complex spatio-temporal queries. Experiments using real robotic data demonstrate EGG’s capability to retrieve relevant information and respond accurately to human inquiries concerning the environment
 
 **Authors:** Phuoc Nguyen, Francesco Verdoja, Ville Kyrki
 
@@ -61,8 +49,6 @@ If you do not want to use Docker for some reason, EGG was tested on Ubuntu 20.04
 - [VideoRefer](https://github.com/phuoc101/PixelRefer) for auto video captioning, otherwise you can use the provided ground truth data (this is a fork of the [original work](https://github.com/DAMO-NLP-SG/PixelRefer) with updated dependencies)
 - OpenAI AI API key (for graph pruning, evaluation, and generating image captions)
 - We recommend uv for Python package managing. Instructions could be found [here](https://docs.astral.sh/uv/getting-started/installation/)
-
-*TODO: Instructions for setting up with uv coming soon*
 
 ## 🧰 Building EGG
 
