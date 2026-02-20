@@ -5,9 +5,9 @@
 
 ## News
 
-- **19/02/2025:** [Our dataset](https://huggingface.co/datasets/phuoc101/EGG-Dataset) is released on HuggingFace 🤗 
+- **19/02/2026:** [Our dataset](https://huggingface.co/datasets/phuoc101/EGG-Dataset) is released on HuggingFace 🤗 
 
-- **14/02/2025:** Our paper got accepted to RA-L 🥳
+- **14/02/2026:** Our paper got accepted to RA-L 🥳
 
 ## 🚀 Overview
 
