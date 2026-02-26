@@ -156,3 +156,7 @@ python3 run_benchmark.py -s pruning_unified -t 1 --model "gpt-4o"
 python3 get_eval_results.py -f <the output file>
 python3 analyze.py -r <the output file> -g <the graph used>
 ```
+
+## 🙏 Acknowledgements
+
+This work was supported by the Research Council of Finland (decision 354909). The authors acknowledge the use of the MIDAS infrastructure of Aalto School of Electrical Engineering.
