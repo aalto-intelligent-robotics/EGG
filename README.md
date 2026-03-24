@@ -5,7 +5,7 @@
 
 ## News
 
-- **19/02/2026:** [Our dataset](https://huggingface.co/datasets/phuoc101/EGG-Dataset) is released on HuggingFace 🤗 
+- **19/02/2026:** [Our dataset](https://huggingface.co/datasets/phuoc101/EGG-Dataset) is released on HuggingFace 🤗
 
 - **14/02/2026:** Our paper got accepted to RA-L 🥳
 
@@ -26,14 +26,16 @@ The prompts that are used for Generative AI are available [here](./Appendix.md)
 If you find this code relevant for your work, please consider citing our paper. A bibtex entry is provided below:
 
 ```bibtex
-@misc{nguyen2026eventgroundinggraphunifiedspatiotemporal,
-      title={Event-Grounding Graph: Unified Spatio-Temporal Scene Graph from Robotic Observations}, 
-      author={Phuoc Nguyen and Francesco Verdoja and Ville Kyrki},
-      year={2026},
-      eprint={2510.18697},
-      archivePrefix={arXiv},
-      primaryClass={cs.RO},
-      url={https://arxiv.org/abs/2510.18697}, 
+@ARTICLE{nguyenEventGroundingGraphUnified2026,
+  author={Nguyen, Phuoc and Verdoja, Francesco and Kyrki, Ville},
+  journal={IEEE Robotics and Automation Letters},
+  title={Event-Grounding Graph: Unified Spatio-Temporal Scene Graph From Robotic Observations},
+  year={2026},
+  volume={11},
+  number={5},
+  pages={5286-5293},
+  keywords={Semantics;Silicon;Robot sensing systems;Grounding;History;Data mining;Aggregates;Videos;Three-dimensional displays;Object recognition;Computer vision;mobile robots;robot vision systems;service robots},
+  doi={10.1109/LRA.2026.3669042}
 }
 ```
 
