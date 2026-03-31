@@ -1,12 +1,15 @@
-from typing import Dict, Optional, Tuple
-import logging
+from typing import ClassVar
+import numpy as np
 from numpy.typing import NDArray
+import logging
 from copy import deepcopy
+from pydantic import BaseModel, Field, ConfigDict
+from typing_extensions import Any
 
-from egg.perception.instance_matching import are_similar_objects
 from egg.graph.node import ObjectNode, RoomNode
 from egg.utils.timestamp import ns_to_datetime
 from egg.utils.logger import getLogger
+from egg.perception.instance_matching import are_similar_objects
 
 
 logger: logging.Logger = getLogger(
@@ -17,36 +20,23 @@ logger: logging.Logger = getLogger(
 )
 
 
-class SpatialComponents:
+class SpatialComponents(BaseModel):
     """
     Manages spatial components of EGG, including object nodes and room nodes.
     """
-    def __init__(
-        self,
-        object_nodes: Dict[int, ObjectNode] = {},
-        room_nodes: Dict[int, RoomNode] = {},
-        map_views: Dict[int, NDArray] = {},
-    ):
-        """
-        Initializes SpatialComponents with optional dictionaries of object nodes, room nodes, and map views.
 
-        :param object_nodes: Dictionary of object nodes.
-        :type object_nodes: Dict[int, ObjectNode]
-        :param room_nodes: Dictionary of room nodes.
-        :type room_nodes: Dict[int, RoomNode]
-        :param map_views: Dictionary of map views.
-        :type map_views: Dict[int, np.ndarray]
-        """
-        self._object_nodes = object_nodes
-        self._map_views = map_views
-        self._room_nodes = room_nodes
+    model_config: ClassVar[ConfigDict] = ConfigDict(arbitrary_types_allowed=True, extra='forbid')
+
+    room_nodes: dict[int, RoomNode] = Field(default_factory=dict)
+    object_nodes: dict[int, ObjectNode] = Field(default_factory=dict)
+    map_views: dict[int, NDArray[np.uint8]] = Field(default_factory=dict)
 
     def is_empty(self) -> bool:
-        return len(self._object_nodes) == 0
+        return bool(self.object_nodes) and bool(self.room_nodes)
 
     def is_new_node(
         self, new_object_node: ObjectNode, use_gt_id: bool
-    ) -> Tuple[bool, int]:
+    ) -> tuple[bool, int]:
         """
         Determines if a given object node is new or similar to existing nodes.
 
@@ -73,7 +63,7 @@ class SpatialComponents:
         :param new_room_node: The room node to add.
         :type new_room_node: RoomNode
         """
-        self._room_nodes.update({new_room_node.node_id: new_room_node})
+        self.room_nodes.update({new_room_node.node_id: new_room_node})
 
     def remove_room_node(self, room_node_id: int):
         """
@@ -82,16 +72,16 @@ class SpatialComponents:
         :param room_node_id: The ID of the room node to remove.
         :type room_node_id: int
         """
-        self._room_nodes.pop(room_node_id)
+        _ = self.room_nodes.pop(room_node_id)
 
-    def replace_room_nodes(self, new_room_nodes: Dict[int, RoomNode]):
+    def replace_room_nodes(self, new_room_nodes: dict[int, RoomNode]):
         """
         Replaces all existing room nodes with a new set.
 
         :param new_room_nodes: Dictionary of new room nodes to set.
         :type new_room_nodes: Dict[int, RoomNode]
         """
-        self._room_nodes = new_room_nodes
+        self.room_nodes = new_room_nodes
 
     def add_object_node(self, new_object_node: ObjectNode):
         """
@@ -100,7 +90,7 @@ class SpatialComponents:
         :param new_object_node: The object node to add.
         :type new_object_node: ObjectNode
         """
-        self._object_nodes.update({new_object_node.node_id: new_object_node})
+        self.object_nodes.update({new_object_node.node_id: new_object_node})
 
     def remove_object_node(self, object_node_id: int):
         """
@@ -109,16 +99,16 @@ class SpatialComponents:
         :param object_node_id: The ID of the object node to remove.
         :type object_node_id: int
         """
-        self._object_nodes.pop(object_node_id)
+        _ = self.object_nodes.pop(object_node_id)
 
-    def replace_object_nodes(self, new_object_nodes: Dict[int, ObjectNode]):
+    def replace_object_nodes(self, new_object_nodes: dict[int, ObjectNode]):
         """
         Replaces all existing object nodes with a new set.
 
         :param new_object_nodes: Dictionary of new object nodes to set.
-        :type new_object_nodes: Dict[int, ObjectNode]
+        :type new_object_nodes: dict[int, ObjectNode]
         """
-        self._object_nodes = new_object_nodes
+        self.object_nodes = new_object_nodes
 
     def merge_object_nodes(self, object_node_0_id: int, object_node_1: ObjectNode):
         """
@@ -129,14 +119,16 @@ class SpatialComponents:
         :param object_node_1: The new object node to merge.
         :type object_node_1: ObjectNode
         """
+        assert isinstance(self.object_nodes[object_node_0_id], ObjectNode)
         logger.debug(
             f"Merging {object_node_1.name} {object_node_1.node_id} and {object_node_0_id}"
         )
         new_timestamped_position = object_node_1.timestamped_position
-        for timestamp, pos in new_timestamped_position.items():
-            self._object_nodes[object_node_0_id].timestamped_position.update(
-                {timestamp: pos}
-            )
+        if self.object_nodes[object_node_0_id].timestamped_position:
+            for timestamp, pos in new_timestamped_position.items():
+                _ = self.object_nodes[object_node_0_id].timestamped_position.update(
+                    {timestamp: pos}
+                )
 
     def set_object_nodes_to_time_range(self, min_timestamp: int, max_timestamp: int):
         """
@@ -147,12 +139,12 @@ class SpatialComponents:
         :param max_timestamp: Ending timestamp of the range.
         :type max_timestamp: int
         """
-        for id in self._object_nodes.keys():
-            self._object_nodes[id].cut_timestamped_position(
+        for id in self.object_nodes.keys():
+            self.object_nodes[id].crop_timestamped_position(
                 min_timestamp, max_timestamp
             )
 
-    def get_object_node_by_id(self, node_id: int) -> Optional[ObjectNode]:
+    def get_object_node_by_id(self, node_id: int) -> ObjectNode | None:
         """
         Retrieves an object node by its ID.
 
@@ -161,46 +153,46 @@ class SpatialComponents:
         :returns: The object node with the given ID or None.
         :rtype: Optional[ObjectNode]
         """
-        if node_id not in self._object_nodes.keys():
+        if node_id not in self.object_nodes.keys():
             logger.warning(
-                f"Trying to access non-existent object node {node_id}, available keys are {self._object_nodes.keys()}"
+                f"Trying to access non-existent object node {node_id}, available keys are {self.object_nodes.keys()}"
             )
-        return self._object_nodes.get(node_id)
+        return self.object_nodes.get(node_id)
 
-    def get_all_room_nodes(self) -> Dict[int, RoomNode]:
+    def get_all_room_nodes(self) -> dict[int, RoomNode]:
         """
         Retrieves all room nodes.
 
         :returns: A dictionary of all room nodes.
         :rtype: Dict[int, RoomNode]
         """
-        return deepcopy(self._room_nodes)
+        return deepcopy(self.room_nodes)
 
-    def get_all_object_nodes(self) -> Dict[int, ObjectNode]:
+    def get_all_object_nodes(self) -> dict[int, ObjectNode]:
         """
         Retrieves all object nodes.
 
         :returns: A dictionary of all object nodes.
-        :rtype: Dict[int, ObjectNode]
+        :rtype: dict[int, ObjectNode]
         """
-        return deepcopy(self._object_nodes)
+        return deepcopy(self.object_nodes)
 
-    def get_object_nodes_by_class(self, object_class: str) -> Dict[int, ObjectNode]:
+    def get_object_nodes_by_class(self, object_class: str) -> dict[int, ObjectNode]:
         """
         Retrieves object nodes by their class.
 
         :param object_class: Class name to retrieve object nodes for.
         :type object_class: str
-        :returns: Dictionary of object nodes that match the given class.
-        :rtype: Dict[int, ObjectNode]
+        :returns: dictionary of object nodes that match the given class.
+        :rtype: dict[int, ObjectNode]
         """
-        object_nodes_by_class = {}
+        object_nodes_by_class: dict[int, ObjectNode] = {}
         for object_node in self.get_all_object_nodes().values():
             if object_node.object_class == object_class:
                 object_nodes_by_class.update({object_node.node_id: object_node})
         return object_nodes_by_class
 
-    def get_object_node_by_name(self, node_name: str) -> Optional[ObjectNode]:
+    def get_object_node_by_name(self, node_name: str) -> ObjectNode | None:
         """
         Retrieves an object node by its name.
 
@@ -215,7 +207,7 @@ class SpatialComponents:
         logger.warning(f"Trying to look for non-existent object {node_name}")
         return None
 
-    def get_room_node_by_name(self, node_name: str) -> Optional[RoomNode]:
+    def get_room_node_by_name(self, node_name: str) -> RoomNode | None:
         """
         Retrieves a room node by its name.
 
@@ -238,36 +230,8 @@ class SpatialComponents:
         :rtype: str
         """
         spatial_str = "📦📦📦 SPATIAL 📦📦📦\n"
-        for object_node in self._object_nodes.values():
+        for object_node in self.object_nodes.values():
             spatial_str += object_node.pretty_str()
-        for room_node in self._room_nodes.values():
+        for room_node in self.room_nodes.values():
             spatial_str += room_node.pretty_str()
         return spatial_str
-
-    def serialize(self) -> Dict:
-        """
-        Serializes the spatial components into a dictionary.
-
-        :returns: Dictionary representation of spatial components.
-        :rtype: Dict
-        """
-        # TODO: Add room nodes serialization
-        spatial_data = {}
-
-        for object_node in self.get_all_object_nodes().values():
-            attr_data = {
-                "node_id": object_node.node_id,
-                "object_class": object_node.object_class,
-                "name": object_node.name,
-                "timestamped_position": {},
-                "caption": object_node.caption,
-            }
-            for timestamp, pos in object_node.timestamped_position.items():
-                timestamp_datetime = ns_to_datetime(timestamp)
-                attr_data["timestamped_position"].update(
-                    {str(timestamp_datetime): [round(p, 3) for p in list(pos)]}
-                )
-
-            spatial_data.update({object_node.node_id: {"attributes": attr_data}})
-
-        return spatial_data

@@ -1,8 +1,11 @@
 import os
 import datetime
 import logging
+from typing import Literal
 
-DEFAULT_LOG_PATH = os.path.join(os.environ["HOME"], "logs")
+from typing_extensions import override
+
+DEFAULT_LOG_PATH: str = os.path.join(os.environ["HOME"], "logs")
 
 
 class LogFormatter(logging.Formatter):
@@ -18,14 +21,14 @@ class LogFormatter(logging.Formatter):
     :vartype FORMATS: Dict[int, str]
     """
 
-    grey = "\x1b[38;21m"
-    blue = "\x1b[38;5;39m"
-    yellow = "\x1b[38;5;226m"
-    red = "\x1b[38;5;196m"
-    bold_red = "\x1b[31;1m"
-    reset = "\x1b[0m"
+    COLOR_GREY: str = "\x1b[38;21m"
+    COLOR_BLUE: str = "\x1b[38;5;39m"
+    COLOR_YELLOW: str = "\x1b[38;5;226m"
+    COLOR_RED: str = "\x1b[38;5;196m"
+    COLOR_BOLD_RED: str = "\x1b[31;1m"
+    COLOR_RESET: str = "\x1b[0m"
 
-    def __init__(self, fmt):
+    def __init__(self, fmt: str):
         """
         Initialize the LogFormatter with the given format.
 
@@ -33,16 +36,26 @@ class LogFormatter(logging.Formatter):
         :type fmt: str
         """
         super().__init__()
-        self.fmt = fmt
-        self.FORMATS = {
-            logging.DEBUG: self.grey + self.fmt + "%(message)s" + self.reset,
-            logging.INFO: self.blue + self.fmt + self.reset + "%(message)s",
-            logging.WARNING: self.yellow + self.fmt + "%(message)s" + self.reset,
-            logging.ERROR: self.red + self.fmt + "%(message)s" + self.reset,
-            logging.CRITICAL: self.bold_red + self.fmt + "%(message)s" + self.reset,
+        self.fmt: str = fmt
+        self.FORMATS: dict[int, str] = {
+            logging.DEBUG: self.COLOR_GREY
+            + self.fmt
+            + "%(message)s"
+            + self.COLOR_RESET,
+            logging.INFO: self.COLOR_BLUE + self.fmt + self.COLOR_RESET + "%(message)s",
+            logging.WARNING: self.COLOR_YELLOW
+            + self.fmt
+            + "%(message)s"
+            + self.COLOR_RESET,
+            logging.ERROR: self.COLOR_RED + self.fmt + "%(message)s" + self.COLOR_RESET,
+            logging.CRITICAL: self.COLOR_BOLD_RED
+            + self.fmt
+            + "%(message)s"
+            + self.COLOR_RESET,
         }
 
-    def format(self, record):
+    @override
+    def format(self, record: logging.LogRecord) -> str:
         """
         Format the log record with the appropriate color based on its
         severity level.
@@ -63,10 +76,7 @@ def getLogger(
     consoleLevel: int = logging.INFO,
     fileLevel: int = logging.DEBUG,
     fmt: str = "%(asctime)s - %(name)s - [%(levelname)s]: ",
-    log_path: str = os.path.join(
-        DEFAULT_LOG_PATH,
-        f"{datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}",
-    ),
+    log_path: str | None = None,
     log_file: str = f"default.log",
 ) -> logging.Logger:
     """
@@ -99,6 +109,11 @@ def getLogger(
     :rtype: logging.Logger
     """
     # Set up logger
+    if log_path is None:
+        log_path = os.path.join(
+            DEFAULT_LOG_PATH,
+            f"{datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}",
+        )
     log_full_path = os.path.join(log_path, log_file)
     os.makedirs(os.path.dirname(log_full_path), exist_ok=True)
     logger = logging.getLogger(name)

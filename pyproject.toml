@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build >= 0.10.0, <0.11.0"]
+requires = ["uv_build >= 0.10.0"]
 build-backend = "uv_build"
 
 [project]
@@ -10,7 +10,7 @@ authors = [
 ]
 description = "Release of Event-Grounding Graph (EGG)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.9,<=3.11"
 classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent",
@@ -28,12 +28,6 @@ dependencies = [
   "openai==2.14.0",
   "pandas==2.0.0",
   "ffmpeg-python==0.2.0",
-  "videorefer==1.0",
-  "langchain==0.3.27",
-  "langchain-community==0.3.16",
-  "langchain-core==0.3.81",
-  "langchain-nvidia-ai-endpoints==0.3.19",
-  "langchain-ollama==0.3.10",
 ]
 
 [project.urls]

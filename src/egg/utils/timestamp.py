@@ -1,9 +1,8 @@
-from typing import Dict, List
-from numpy.typing import NDArray
 from datetime import datetime
 import logging
 
 from egg.utils.logger import getLogger
+from egg.utils.geometry import Odometry, Position
 
 
 logger: logging.Logger = getLogger(
@@ -33,30 +32,20 @@ def datetime_to_ns(dt: datetime) -> int:
     return int(nanoseconds_total)
 
 
-def print_timestamped_position(timestamped_position: Dict[int, NDArray]) -> str:
+def print_timestamped_position(timestamped_position: dict[int, Position]) -> str:
     output_str = "\n"
     for timestamp_ns, pos in timestamped_position.items():
         output_str += f"\t{ns_to_datetime(timestamp_ns)}: {pos}\n"
     return output_str
 
 
-def print_object_locations(locations: List[Dict]) -> str:
-    output_str = "\n"
-    for loc_data in locations:
-        output_str += f"\t{ns_to_datetime(loc_data['start'])} - {ns_to_datetime(loc_data['end'])}: {loc_data['location']}\n"
-    return output_str
-
-
 def print_timestamped_observation_odom(
-    timestamped_observation_odom: Dict[int, Dict[str, List]],
+    timestamped_observation_odom: dict[int, Odometry],
     first_only: bool = True,
 ) -> str:
     output_str = "\n"
     for timestamp_ns, odom in timestamped_observation_odom.items():
-        output_str += (
-            f"\t{ns_to_datetime(timestamp_ns)}:"
-            + f"\n\t- Camera Odom: {odom['camera_odom']}\n"
-        )
+        output_str += f"\t{ns_to_datetime(timestamp_ns)}:" + f"\n\t- Odom: {odom}\n"
         if first_only:
             break
     return output_str
