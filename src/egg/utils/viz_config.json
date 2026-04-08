@@ -1,0 +1,15 @@
+{
+  "pcd_color": [0.2, 0.5, 0.7],
+  "event_color": [0.2, 0.2, 0.6],
+  "object_color": [0.8, 0.3, 0.5],
+  "inactive_object_color": [0.3, 0.0, 0.0],
+  "edge_color": [0.2, 0.2, 0.2],
+  "base_cam_color": [0.2, 0.2, 0.2],
+  "room_color": [0.7, 0.2, 0.6],
+  "spatial_node_dim": 0.05,
+  "event_node_dim": 0.2,
+  "room_offset": 3.0,
+  "building_offset": 4.0,
+  "panel_height": 120,
+  "window_size": [1024, 768]
+}

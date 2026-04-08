@@ -1,3 +1,5 @@
+import numpy as np
+from numpy.typing import NDArray
 from pydantic import BaseModel, Field, ConfigDict
 from typing_extensions import ClassVar
 
@@ -9,6 +11,14 @@ class Position(BaseModel):
     y: float
     z: float
 
+    def as_numpy(self) -> NDArray[np.float32]:
+        return np.array([self.x, self.y, self.z])
+
+    def round(self, ndigits: int = 3) -> None:
+        self.x = round(self.x, ndigits)
+        self.y = round(self.y, ndigits)
+        self.z = round(self.z, ndigits)
+
 
 class Dimensions(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
@@ -16,6 +26,14 @@ class Dimensions(BaseModel):
     x: float = Field(ge=0)
     y: float = Field(ge=0)
     z: float = Field(ge=0)
+
+    def as_numpy(self) -> NDArray[np.float32]:
+        return np.array([self.x, self.y, self.z])
+
+    def round(self, ndigits: int = 3) -> None:
+        self.x = round(self.x, ndigits)
+        self.y = round(self.y, ndigits)
+        self.z = round(self.z, ndigits)
 
 
 class Rotation(BaseModel):

@@ -1,4 +1,5 @@
 from datetime import datetime
+import sys
 import numpy as np
 from numpy.typing import NDArray
 import logging
@@ -96,6 +97,34 @@ class EventNode(GraphNode):
             raise ValueError("end must be greater than or equal to start")
         return self
 
+    def is_in_time_range(
+        self, min_timestamp: int = 0, max_timestamp: int = sys.maxsize
+    ):
+        """
+        Checks if the event is within a specified time range.
+
+        :param min_timestamp: Minimum timestamp for the range.
+        :type min_timestamp: int
+        :param max_timestamp: Maximum timestamp for the range.
+        :type max_timestamp: int
+        :returns: True if the event is within the range, False otherwise.
+        :rtype: bool
+        """
+        if self.start >= min_timestamp and self.end <= max_timestamp:
+            return True
+        return False
+
+    def is_in_location(self, location_list: list[str] | None = None):
+        """
+        Checks if the event location is in a given list of locations.
+
+        :param location_list: List of locations to check against.
+        :type location_list: Optional[List[str]]
+        :returns: True if the event location is in the list, False otherwise.
+        :rtype: bool
+        """
+        return location_list is None or self.location in location_list
+
     def pretty_str(self) -> str:
         """
         Generates a formatted string representation of the event node details.
@@ -181,19 +210,19 @@ class ObjectNode(SpatialNode):
     receptacle_object_ids: list[str] | None = None
 
     # Immutable capability flags (required, no defaults)
-    is_pickupable: bool = Field(frozen=True)
-    is_moveable: bool = Field(frozen=True)
-    is_toggleable: bool = Field(frozen=True)
-    is_breakable: bool = Field(frozen=True)
-    can_fill_with_liquid: bool = Field(frozen=True)
-    is_dirtyable: bool = Field(frozen=True)
-    can_be_used_up: bool = Field(frozen=True)
-    is_cookable: bool = Field(frozen=True)
-    is_heat_source: bool = Field(frozen=True)
-    is_cold_source: bool = Field(frozen=True)
-    is_sliceable: bool = Field(frozen=True)
-    is_openable: bool = Field(frozen=True)
-    is_receptacle: bool = Field(frozen=True)
+    is_pickupable: bool = Field(default=False, frozen=True)
+    is_moveable: bool = Field(default=False, frozen=True)
+    is_toggleable: bool = Field(default=False, frozen=True)
+    is_breakable: bool = Field(default=False, frozen=True)
+    can_fill_with_liquid: bool = Field(default=False, frozen=True)
+    is_dirtyable: bool = Field(default=False, frozen=True)
+    can_be_used_up: bool = Field(default=False, frozen=True)
+    is_cookable: bool = Field(default=False, frozen=True)
+    is_heat_source: bool = Field(default=False, frozen=True)
+    is_cold_source: bool = Field(default=False, frozen=True)
+    is_sliceable: bool = Field(default=False, frozen=True)
+    is_openable: bool = Field(default=False, frozen=True)
+    is_receptacle: bool = Field(default=False, frozen=True)
 
     # Mutable state fields
     is_picked_up: bool = False
@@ -213,6 +242,7 @@ class ObjectNode(SpatialNode):
     @classmethod
     def from_ai2thor(cls, node_id: int, object_metadata: Ai2ThorObjectMetadata) -> Self:
         bounding_box = object_metadata.get_bounding_box()
+        bounding_box.round(ndigits=3)
         return cls(
             node_id=node_id,
             name=object_metadata.objectId,

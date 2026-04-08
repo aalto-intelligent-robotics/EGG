@@ -1,6 +1,7 @@
 from copy import deepcopy
 import logging
 from pydantic import BaseModel, Field
+import sys
 
 from egg.graph.node import EventNode
 from egg.utils.logger import getLogger
@@ -25,7 +26,7 @@ class EventComponents(BaseModel):
     def is_empty(self) -> bool:
         return len(self.event_nodes) == 0
 
-    def get_num_events(self):
+    def get_num_events(self) -> int:
         """
         Returns the number of event nodes.
 
@@ -34,7 +35,7 @@ class EventComponents(BaseModel):
         """
         return len(self.event_nodes)
 
-    def get_event_ids(self):
+    def get_event_ids(self) -> list[int]:
         """
         Returns a list of all event node IDs.
 
@@ -60,6 +61,65 @@ class EventComponents(BaseModel):
         :type event_nodes: Dict[int, EventNode]
         """
         self.event_nodes = event_nodes
+
+    def get_event_node_by_id(self, node_id: int) -> EventNode | None:
+        """
+        Retrieves an event node by its ID.
+
+        :param node_id: The ID of the event node to retrieve.
+        :type node_id: int
+        :returns: The event node with the given ID or None.
+        :rtype: Optional[EventNode]
+        """
+        if node_id not in self.event_nodes.keys():
+            logger.warning(f"Trying to access non-existent object node {node_id}")
+        return self.event_nodes.get(node_id)
+
+    def get_event_nodes_by_objects(
+        self, object_node_ids: list[int]
+    ) -> dict[int, EventNode]:
+        """
+        Returns event nodes that involve specified object IDs.
+
+        :param object_node_ids: List of object node IDs to search for.
+        :type object_node_ids: List[int]
+        :returns: Dictionary of relevant event nodes.
+        :rtype: Dict[int, EventNode]
+        """
+        relevant_event_nodes: dict[int, EventNode] = {}
+        raise NotImplementedError
+        # for event_node in self.get_event_nodes().values():
+        #     for id in object_node_ids:
+        #         if id in event_node.involved_object_ids:
+        #             relevant_event_nodes.update({event_node.node_id: event_node})
+        #             break
+        return relevant_event_nodes
+
+    def get_event_nodes(
+        self,
+        min_timestamp: int = 0,
+        max_timestamp: int = sys.maxsize,
+        locations_list: list[str] | None = None,
+    ) -> dict[int, EventNode]:
+        """
+        Retrieves all event nodes within a certain time range and location.
+
+        :param min_timestamp: Minimum timestamp for search.
+        :type min_timestamp: int
+        :param max_timestamp: Maximum timestamp for search.
+        :type max_timestamp: int
+        :param locations_list: List of locations to include.
+        :type locations_list: Optional[List[str]]
+        :returns: Dictionary of event nodes in the specified range and location.
+        :rtype: Dict[int, EventNode]
+        """
+        relevant_event_nodes: dict[int, EventNode] = {}
+        for event_node in self.event_nodes.values():
+            if event_node.is_in_time_range(
+                min_timestamp, max_timestamp
+            ) and event_node.is_in_location(locations_list):
+                relevant_event_nodes.update({event_node.node_id: event_node})
+        return relevant_event_nodes
 
     def pretty_str(self) -> str:
         """
