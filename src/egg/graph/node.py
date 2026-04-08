@@ -72,9 +72,9 @@ class EventNode(GraphNode):
     :type location: str
     """
 
-    event_description: str
-    start: int
-    end: int
+    event_description: str = "Default description"
+    start: int = Field(default=0, gt=0)
+    end: int = Field(default=1, gt=0)
     timestamped_observation_odom: dict[int, Odometry] = Field(
         default_factory=dict,
         description=(
@@ -322,6 +322,38 @@ class ObjectNode(SpatialNode):
         }
         state_on = [k for k, v in state.items() if v is True]
         return ", ".join(state_on) if state_on else "None"
+    
+    def has_been_seen(self, timestamp: int) -> bool:
+        """
+        Checks if the object has been observed before a given timestamp.
+
+        :param timestamp: The reference timestamp.
+        :type timestamp: int
+        :returns: True if the object has been seen, False otherwise.
+        :rtype: bool
+        """
+        first_timestamp = next(iter(self.timestamped_position.keys()))
+        return first_timestamp <= timestamp
+
+    def get_previous_timestamp_and_position(self, ref_timestamp: int):
+        """
+        Gets the previous timestamp and position relative to a reference timestamp.
+
+        :param ref_timestamp: The reference timestamp.
+        :type ref_timestamp: int
+        :returns: Tuple of the previous timestamp and position, or (None, None).
+        :rtype: Tuple[Optional[int], Optional[np.ndarray]]
+        """
+        if self.has_been_seen(ref_timestamp):
+            prev_timestamp = next(iter(self.timestamped_position.keys()))
+            for timestamp in self.timestamped_position.keys():
+                if timestamp >= ref_timestamp:
+                    return (prev_timestamp, self.timestamped_position[prev_timestamp])
+                else:
+                    prev_timestamp = timestamp
+            return (prev_timestamp, self.timestamped_position[prev_timestamp])
+        else:
+            return (None, None)
 
     def pretty_str(self) -> str:
         """

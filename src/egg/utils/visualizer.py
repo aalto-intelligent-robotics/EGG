@@ -46,6 +46,7 @@ class EGGVizConfig(BaseModel):
     building_offset: float = Field(default=4, ge=0, frozen=True)
     panel_height: int = Field(default=120, ge=0, frozen=True)
     window_size: tuple[int, int] = Field(default=(1024, 768), frozen=True)
+    ignore_classes: list[str] = Field(default_factory=list, frozen=True)
 
     # Validators
     @field_validator(
@@ -167,12 +168,73 @@ class EGGViz(BaseModel):
     def draw_event_node(self, event_id: int) -> list[VizElement]:
         # TODO: Implement
         events_viz: list[VizElement] = []
+        event_node = self.egg.events.get_event_node_by_id(event_id)
+        assert isinstance(event_node, EventNode)
+
+        events_viz += self.draw_uninvolved_objects(event_node=event_node)
         return events_viz
 
     def draw_room_nodes(self) -> list[VizElement]:
         # TODO: Implement
         rooms_viz: list[VizElement] = []
         return rooms_viz
+
+    def draw_uninvolved_objects(self, event_node: EventNode) -> list[VizElement]:
+        obj_viz = []
+        non_involved_ids = [
+            id
+            for id in list(self.egg.spatial.get_all_object_nodes().keys())
+            # if id not in event_node.involved_object_ids
+        ]
+        for obj_node_id in non_involved_ids:
+            obj_node = self.egg.spatial.get_object_node_by_id(obj_node_id)
+            assert obj_node is not None
+            if obj_node.has_been_seen(
+                event_node.start
+            ) and obj_node.object_class.lower() not in self.viz_config.ignore_classes:
+                prev_timestamp, prev_pos = obj_node.get_previous_timestamp_and_position(
+                    event_node.start
+                )
+                assert (
+                    prev_pos is not None and prev_timestamp is not None
+                ), f"Node {obj_node.name} failed, timestamps {list(obj_node.timestamped_position.keys())} ref_timestamp {event_node.start}"
+                # prev_event_node = self.egg.events.get_event_node_by_timestamp(
+                #     prev_timestamp
+                # )
+                # assert prev_event_node is not None
+                # prev_room_node = self.egg.spatial.get_room_node_by_name(
+                #     prev_event_node.location
+                # )
+                # assert prev_room_node is not None
+                # prev_room_pos_viz = prev_room_node.position
+                # prev_room_pos_viz[2] = self.room_offset
+                obj_viz += [
+                    VizElement(
+                        name=f"Object {obj_node_id} Prev Node",
+                        geometry=self.draw_aabb(
+                            aabb=obj_node.bounding_box,
+                            color=self.viz_config.inactive_object_color,
+                            # center=prev_pos,
+                            # dim=OBJECT_NODE_DIM,
+                            # color=INACTIVE_OBJECT_COLOR,
+                        ),
+                    ),
+                    VizElement(
+                        name=f"Object {obj_node_id} Prev Node Label",
+                        geometry=self.draw_text_mesh(
+                            text=f"{obj_node.name}",
+                            position=obj_node.bounding_box.center.as_numpy(),
+                        ),
+                    ),
+                    # VizElement(
+                    #     name=f"Object {obj_node_id} - {prev_room_node.name} Edge",
+                    #     geometry=self.draw_line(
+                    #         source=prev_pos,
+                    #         target=prev_room_pos_viz,
+                    #     ),
+                    # ),
+                ]
+        return obj_viz
 
     def update_event(self, event_id: int):
         event_viz = self.draw_event_node(event_id)
@@ -244,7 +306,7 @@ class EGGViz(BaseModel):
     def draw_aabb(
         self,
         aabb: AxisAlignedBoundingBox,
-        color: tuple[float, float, float] = (0.5, 0.5, 0.5),
+        color: tuple[float, float, float],
     ) -> o3d.geometry.AxisAlignedBoundingBox:
         """Create an axis-aligned bounding box centered at `center`.
 
