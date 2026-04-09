@@ -55,3 +55,13 @@ class Polygon(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
     corners: list[Position] = Field(default_factory=list, min_length=3)
+
+class AxisAlignedBoundingBox(BaseModel):
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
+
+    center: Position
+    size: Dimensions
+
+    def round(self, ndigits: int = 3):
+        self.center.round(ndigits=ndigits)
+        self.size.round(ndigits=ndigits)

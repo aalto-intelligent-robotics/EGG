@@ -10,7 +10,7 @@ from typing_extensions import Self
 from egg.utils.data import Ai2ThorObjectMetadata, Ai2ThorRoomMetadata
 from egg.utils.geometry import Polygon, Position, Odometry
 from egg.utils.logger import getLogger
-from egg.utils.bounding_box import AxisAlignedBoundingBox
+from egg.utils.geometry import AxisAlignedBoundingBox
 from egg.utils.timestamp import (
     datetime_to_ns,
     print_timestamped_position,

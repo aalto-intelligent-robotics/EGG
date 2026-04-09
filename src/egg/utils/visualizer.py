@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 import numpy as np
 from numpy.typing import NDArray
 
-from egg.utils.bounding_box import AxisAlignedBoundingBox
+from egg.utils.geometry import AxisAlignedBoundingBox
 from egg.utils.logger import getLogger
 from egg.graph.egg import EGG
 from egg.graph.node import ObjectNode, EventNode

@@ -1,8 +1,7 @@
 from typing import ClassVar
 from pydantic import BaseModel, ConfigDict, Field
 
-from egg.utils.bounding_box import AxisAlignedBoundingBox
-from egg.utils.geometry import Position, Dimensions
+from egg.utils.geometry import Position, Dimensions, AxisAlignedBoundingBox
 
 
 class Ai2ThorRoomMetadata(BaseModel):
