@@ -192,12 +192,12 @@ class EGGViz(BaseModel):
             if obj_node.has_been_seen(
                 event_node.start
             ) and obj_node.object_class.lower() not in self.viz_config.ignore_classes:
-                prev_timestamp, prev_pos = obj_node.get_previous_timestamp_and_position(
+                prev_timestamp, prev_pos = obj_node.get_previous_timestamp_and_states(
                     event_node.start
                 )
                 assert (
                     prev_pos is not None and prev_timestamp is not None
-                ), f"Node {obj_node.name} failed, timestamps {list(obj_node.timestamped_position.keys())} ref_timestamp {event_node.start}"
+                ), f"Node {obj_node.name} failed, timestamps {list(obj_node.timestamped_states.keys())} ref_timestamp {event_node.start}"
                 # prev_event_node = self.egg.events.get_event_node_by_timestamp(
                 #     prev_timestamp
                 # )
@@ -212,7 +212,7 @@ class EGGViz(BaseModel):
                     VizElement(
                         name=f"Object {obj_node_id} Prev Node",
                         geometry=self.draw_aabb(
-                            aabb=obj_node.bounding_box,
+                            aabb=obj_node.timestamped_states[prev_timestamp].bounding_box,
                             color=self.viz_config.inactive_object_color,
                             # center=prev_pos,
                             # dim=OBJECT_NODE_DIM,
@@ -223,7 +223,7 @@ class EGGViz(BaseModel):
                         name=f"Object {obj_node_id} Prev Node Label",
                         geometry=self.draw_text_mesh(
                             text=f"{obj_node.name}",
-                            position=obj_node.bounding_box.center.as_numpy(),
+                            position=obj_node.timestamped_states[prev_timestamp].bounding_box.center.as_numpy(),
                         ),
                     ),
                     # VizElement(

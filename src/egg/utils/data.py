@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import ClassVar, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from egg.utils.geometry import Position, Dimensions, AxisAlignedBoundingBox
@@ -46,7 +46,7 @@ class Ai2ThorObjectMetadata(BaseModel):
     receptacle: bool = Field(frozen=True)
     receptacleObjectIds: list[str] | None
 
-    temperature: str
+    temperature: Literal["Cold", "Hot", "RoomTemp"]
     isHeatSource: bool
     isColdSource: bool
 

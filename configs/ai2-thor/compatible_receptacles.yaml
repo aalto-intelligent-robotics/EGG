@@ -1,0 +1,64 @@
+- AlarmClock:
+    compatible_receptacles: ["Box", "Dresser", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "CounterTop", "Shelf"]
+- Apple:
+    compatible_receptacles: ["Pot", "Pan", "Bowl", "Microwave", "Fridge", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "Desk", "CounterTop", "GarbageCan", "Dresser"]
+- BasketBall:
+    compatible_receptacles: ["Sofa", "ArmChair", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "Bed"]
+- Book:
+    compatible_receptacles: ["Sofa", "ArmChair", "Box", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "Bed", "Drawer", "Shelf"]
+- Bottle:
+    compatible_receptacles: ["Fridge", "Box", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "CounterTop", "Shelf", "GarbageCan"]
+- Bowl:
+    compatible_receptacles: ["Microwave", "Fridge", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "CounterTop", "Shelf"]
+- Bread:
+    compatible_receptacles: ["Microwave", "Fridge", "DiningTable", "CounterTop", "GarbageCan"]
+- ButterKnife:
+    compatible_receptacles: ["Mug", "Plate", "Cup", "DiningTable", "CounterTop", "Drawer"]
+- Candle:
+    compatible_receptacles: ["Box", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "CounterTop", "Shelf", "Toilet", "Cart"]
+- CD:
+    compatible_receptacles: ["Box", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "CounterTop", "Shelf", "Drawer", "GarbageCan", "Safe"]
+- CellPhone:
+    compatible_receptacles: ["Sofa", "ArmChair", "Box", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "Bed", "Drawer", "Safe"]
+- Cloth:
+    compatible_receptacles: ["Sofa", "ArmChair", "Box", "LaundryHamper", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "Toilet", "Cart", "Bathtub", "BathtubBasin", "Drawer", "GarbageCan"]
+- Cup:
+    compatible_receptacles: ["Microwave", "Fridge", "Dresser", "Desk", "Sink", "SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf"]
+- DishSponge:
+    compatible_receptacles: ["Plate", "Box", "Toilet", "Cart", "Bathtub", "BathtubBasin", "Sink", "SinkBasin", "Cabinet", "CounterTop", "Drawer", "GarbageCan"]
+- Egg:
+    compatible_receptacles: ["Microwave", "Fridge", "Plate", "DiningTable", "CounterTop", "GarbageCan"]
+- Fork:
+    compatible_receptacles: ["Mug", "Plate", "Cup", "DiningTable", "CounterTop", "Drawer"]
+- Kettle:
+    compatible_receptacles: ["StoveBurner", "DiningTable", "CounterTop"]
+- Knife:
+    compatible_receptacles: ["Mug", "Plate", "DiningTable", "CounterTop", "Drawer"]
+- Laptop:
+    compatible_receptacles: ["Sofa", "ArmChair", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "Bed"]
+- Lettuce:
+    compatible_receptacles: ["Fridge", "Plate", "DiningTable", "CounterTop", "GarbageCan"]
+- Mug:
+    compatible_receptacles: ["Microwave", "Fridge", "Box", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "CounterTop", "Shelf", "CoffeeMachine", "Cart"]
+- Newspaper:
+    compatible_receptacles: ["Sofa", "ArmChair", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "Bed", "Toilet", "Drawer", "GarbageCan"]
+- Pan:
+    compatible_receptacles: ["StoveBurner", "Fridge", "DiningTable", "CounterTop"]
+- Plate:
+    compatible_receptacles: ["Microwave", "Fridge", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "CounterTop", "Shelf"]
+- Pot:
+    compatible_receptacles: ["StoveBurner", "Fridge", "DiningTable", "CounterTop"]
+- Potato:
+    compatible_receptacles: ["Microwave", "Fridge", "Plate", "DiningTable", "CounterTop", "GarbageCan"]
+- RemoteControl:
+    compatible_receptacles: ["Sofa", "ArmChair", "Box", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "Drawer"]
+- SoapBottle:
+    compatible_receptacles: ["Desk", "SideTable", "DiningTable", "CounterTop", "Shelf", "Toilet", "Cart", "GarbageCan"]
+- Statue:
+    compatible_receptacles: ["Box", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "CounterTop", "Shelf", "Cart", "Safe"]
+- Tomato:
+    compatible_receptacles: ["Microwave", "Fridge", "Plate", "DiningTable", "CounterTop", "GarbageCan"]
+- Vase:
+    compatible_receptacles: ["Box", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "CounterTop", "Shelf", "Cart", "Safe"]
+- WineBottle:
+    compatible_receptacles: ["Fridge", "Desk", "SideTable", "DiningTable", "CounterTop", "Shelf", "GarbageCan"]

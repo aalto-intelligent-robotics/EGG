@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import ClassVar
 import numpy as np
 from numpy.typing import NDArray
@@ -7,10 +8,10 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing_extensions import Any
 
 from egg.graph.node import ObjectNode, RoomNode
-from egg.utils.timestamp import ns_to_datetime
+from egg.utils.geometry import AxisAlignedBoundingBox, Position
+from egg.utils.timestamp import datetime_to_ns, ns_to_datetime
 from egg.utils.logger import getLogger
 from egg.perception.instance_matching import are_similar_objects
-
 
 logger: logging.Logger = getLogger(
     name=__name__,
@@ -25,7 +26,9 @@ class SpatialComponents(BaseModel):
     Manages spatial components of EGG, including object nodes and room nodes.
     """
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(arbitrary_types_allowed=True, extra='forbid')
+    model_config: ClassVar[ConfigDict] = ConfigDict(
+        arbitrary_types_allowed=True, extra="forbid"
+    )
 
     room_nodes: dict[int, RoomNode] = Field(default_factory=dict)
     object_nodes: dict[int, ObjectNode] = Field(default_factory=dict)
@@ -123,11 +126,11 @@ class SpatialComponents(BaseModel):
         logger.debug(
             f"Merging {object_node_1.name} {object_node_1.node_id} and {object_node_0_id}"
         )
-        new_timestamped_position = object_node_1.timestamped_position
-        if self.object_nodes[object_node_0_id].timestamped_position:
-            for timestamp, pos in new_timestamped_position.items():
-                _ = self.object_nodes[object_node_0_id].timestamped_position.update(
-                    {timestamp: pos}
+        new_timestamped_states = object_node_1.timestamped_states
+        if self.object_nodes[object_node_0_id].timestamped_states:
+            for timestamp, state in new_timestamped_states.items():
+                _ = self.object_nodes[object_node_0_id].timestamped_states.update(
+                    {timestamp: state}
                 )
 
     def set_object_nodes_to_time_range(self, min_timestamp: int, max_timestamp: int):
@@ -140,9 +143,7 @@ class SpatialComponents(BaseModel):
         :type max_timestamp: int
         """
         for id in self.object_nodes.keys():
-            self.object_nodes[id].crop_timestamped_position(
-                min_timestamp, max_timestamp
-            )
+            self.object_nodes[id].crop_timestamped_states(min_timestamp, max_timestamp)
 
     def get_object_node_by_id(self, node_id: int) -> ObjectNode | None:
         """
@@ -158,6 +159,12 @@ class SpatialComponents(BaseModel):
                 f"Trying to access non-existent object node {node_id}, available keys are {self.object_nodes.keys()}"
             )
         return self.object_nodes.get(node_id)
+
+    def get_all_object_classes(self) -> set[str]:
+        object_class_set: set[str] = set()
+        for object_node in self.get_all_object_nodes().values():
+            object_class_set.add(object_node.object_class)
+        return object_class_set
 
     def get_all_room_nodes(self) -> dict[int, RoomNode]:
         """
@@ -221,6 +228,73 @@ class SpatialComponents(BaseModel):
                 return room_node
         logger.warning(f"Trying to look for non-existent room {node_name}")
         return None
+
+    def get_object_by_capabilities(
+        self,
+        capabilities: list[str],
+        object_nodes_to_search: dict[int, ObjectNode] | None = None,
+    ) -> dict[int, ObjectNode]:
+        
+        valid_capabilities = list(ObjectNode.ObjectCapabilities.model_fields.keys())
+        for cap in capabilities:
+            assert (
+                cap in valid_capabilities
+            ), f"{cap} is not a valid capability. Valid capabilities are {valid_capabilities}"
+            
+        object_nodes_with_capabilities: dict[int, ObjectNode] = {}
+        
+        if object_nodes_to_search is None:
+            object_nodes_to_search = self.get_all_object_nodes()
+            
+        for id, object_node in object_nodes_to_search.items():
+            capabilities_dict = object_node.capabilities.model_dump(mode="python")
+            if all([capabilities_dict[cap] for cap in capabilities]):
+                object_nodes_with_capabilities.update({id: object_node})
+        return object_nodes_with_capabilities
+
+    def get_object_by_states(
+        self,
+        desired_states: dict[str, bool | str],
+        timestamp: int | None = None,
+        object_nodes_to_search: dict[int, ObjectNode] | None = None,
+    ) -> dict[int, ObjectNode]:
+        invalid_states = {"position", "bounding_box", "instance_view", "openness"}
+        valid_states = set(ObjectNode.ObjectState.model_fields.keys()) - invalid_states
+        
+        for state_name, state_value in desired_states.items():
+            assert (
+                state_name in valid_states
+            ), f"{state_name} is not a valid state. Valid capabilities are {valid_states}"
+            if state_name == "temperature" and state_value not in [
+                "Cold",
+                "RoomTemp",
+                "Hot",
+            ]:
+                raise ValueError(
+                    f"Valid temperature values are: [Cold, RoomTemp, Hot], got {state_value}"
+                )
+                
+        object_nodes_with_desired_states: dict[int, ObjectNode] = {}
+        
+        if object_nodes_to_search is None:
+            object_nodes_to_search = self.get_all_object_nodes()
+        if timestamp is None:
+            timestamp = datetime_to_ns(datetime.now())
+            
+        for id, object_node in object_nodes_to_search.items():
+            _, prev_state = object_node.get_previous_timestamp_and_states(
+                ref_timestamp=timestamp
+            )
+            if isinstance(prev_state, ObjectNode.ObjectState):
+                prev_state_dict = prev_state.model_dump(mode="python")
+                if all(
+                    [
+                        prev_state_dict[state] == desired_states[state]
+                        for state in desired_states.keys()
+                    ]
+                ):
+                    object_nodes_with_desired_states.update({id: object_node})
+        return object_nodes_with_desired_states
 
     def pretty_str(self) -> str:
         """
