@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 import sys
 
 from egg.graph.node import EventNode
-from egg.utils.logger import getLogger
 from egg.utils.timestamp import ns_to_datetime
+from egg.utils.logger import getLogger
 
 
 logger: logging.Logger = getLogger(

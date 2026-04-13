@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import Annotated, ClassVar, Literal
 from typing_extensions import Self
 
-from egg.utils.data import Ai2ThorObjectMetadata, Ai2ThorRoomMetadata
+from egg.utils.data import Ai2ThorObjectMetadata, Ai2ThorRoomMetadata, Ai2ThorTemperature
 from egg.utils.geometry import Polygon, Position, Odometry
 from egg.utils.logger import getLogger
 from egg.utils.geometry import AxisAlignedBoundingBox
@@ -231,7 +231,7 @@ class ObjectNode(SpatialNode):
         is_cooked: bool = False
         is_sliced: bool = False
         is_open: bool = False
-        temperature: Literal["RoomTemp", "Cold", "Hot"] = "RoomTemp"
+        temperature: Ai2ThorTemperature = "RoomTemp"
         parent_receptacles: list[str] | None = None
         receptacle_object_ids: list[str] | None = None
         instance_view: NDArray[np.uint8] | None = None
@@ -338,11 +338,12 @@ class ObjectNode(SpatialNode):
             state_on = [k for k, v in state.items() if v is True]
             state_str += (
                 f"\n\t- {ns_to_datetime(ts)}:"
-                + f"\n\t\t{', '.join(state_on) if state_on else None}"
-                + f"\n\t\tTemperature: {ts_state.temperature}, Visible: {ts_state.is_visible}"
-                + f"\n\t\tOpenness: {ts_state.openness}"
-                + f"\n\t\tParent Receptacles: {', '.join(ts_state.parent_receptacles) if ts_state.parent_receptacles else None}"
-                + f"\n\t\tContained Object IDs: {', '.join(map(str, ts_state.receptacle_object_ids)) if ts_state.receptacle_object_ids else None}\n"
+                + f"\n\t\t- Position: {ts_state.position}"
+                + f"\n\t\t- {', '.join(state_on) if state_on else None}"
+                + f"\n\t\t- Temperature: {ts_state.temperature}, Visible: {ts_state.is_visible}"
+                + f"\n\t\t- Openness: {ts_state.openness}"
+                + f"\n\t\t- Parent Receptacles: {', '.join(ts_state.parent_receptacles) if ts_state.parent_receptacles else None}"
+                + f"\n\t\t- Contained Object IDs: {', '.join(map(str, ts_state.receptacle_object_ids)) if ts_state.receptacle_object_ids else None}\n"
             )
         return state_str
 
@@ -358,9 +359,10 @@ class ObjectNode(SpatialNode):
         first_timestamp = next(iter(self.timestamped_states.keys()))
         return first_timestamp <= timestamp
 
-    def get_previous_timestamp_and_states(self, ref_timestamp: int):
+    def get_previous_timestamp_and_states(self, ref_timestamp: int = sys.maxsize):
         """
         Gets the previous timestamp and position relative to a reference timestamp.
+        If a referecne timestamp is not provided, default to the last time the node was registered
 
         :param ref_timestamp: The reference timestamp.
         :type ref_timestamp: int

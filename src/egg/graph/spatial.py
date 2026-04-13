@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar
+from typing import ClassVar, get_args
 import numpy as np
 from numpy.typing import NDArray
 import logging
@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing_extensions import Any
 
 from egg.graph.node import ObjectNode, RoomNode
+from egg.utils.data import Ai2ThorTemperature
 from egg.utils.geometry import AxisAlignedBoundingBox, Position
 from egg.utils.timestamp import datetime_to_ns, ns_to_datetime
 from egg.utils.logger import getLogger
@@ -234,18 +235,18 @@ class SpatialComponents(BaseModel):
         capabilities: list[str],
         object_nodes_to_search: dict[int, ObjectNode] | None = None,
     ) -> dict[int, ObjectNode]:
-        
+
         valid_capabilities = list(ObjectNode.ObjectCapabilities.model_fields.keys())
         for cap in capabilities:
             assert (
                 cap in valid_capabilities
             ), f"{cap} is not a valid capability. Valid capabilities are {valid_capabilities}"
-            
+
         object_nodes_with_capabilities: dict[int, ObjectNode] = {}
-        
+
         if object_nodes_to_search is None:
             object_nodes_to_search = self.get_all_object_nodes()
-            
+
         for id, object_node in object_nodes_to_search.items():
             capabilities_dict = object_node.capabilities.model_dump(mode="python")
             if all([capabilities_dict[cap] for cap in capabilities]):
@@ -260,27 +261,25 @@ class SpatialComponents(BaseModel):
     ) -> dict[int, ObjectNode]:
         invalid_states = {"position", "bounding_box", "instance_view", "openness"}
         valid_states = set(ObjectNode.ObjectState.model_fields.keys()) - invalid_states
-        
+
         for state_name, state_value in desired_states.items():
             assert (
                 state_name in valid_states
             ), f"{state_name} is not a valid state. Valid capabilities are {valid_states}"
-            if state_name == "temperature" and state_value not in [
-                "Cold",
-                "RoomTemp",
-                "Hot",
-            ]:
+            if state_name == "temperature" and state_value not in get_args(
+                Ai2ThorTemperature
+            ):
                 raise ValueError(
-                    f"Valid temperature values are: [Cold, RoomTemp, Hot], got {state_value}"
+                    f"Valid temperature values are: {get_args(Ai2ThorTemperature)}, got {state_value}"
                 )
-                
+
         object_nodes_with_desired_states: dict[int, ObjectNode] = {}
-        
+
         if object_nodes_to_search is None:
             object_nodes_to_search = self.get_all_object_nodes()
         if timestamp is None:
             timestamp = datetime_to_ns(datetime.now())
-            
+
         for id, object_node in object_nodes_to_search.items():
             _, prev_state = object_node.get_previous_timestamp_and_states(
                 ref_timestamp=timestamp

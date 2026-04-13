@@ -3,6 +3,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from egg.utils.geometry import Position, Dimensions, AxisAlignedBoundingBox
 
+Ai2ThorTemperature = Literal["Cold", "Hot", "RoomTemp"]
+
 
 class Ai2ThorRoomMetadata(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="allow")
@@ -46,7 +48,7 @@ class Ai2ThorObjectMetadata(BaseModel):
     receptacle: bool = Field(frozen=True)
     receptacleObjectIds: list[str] | None
 
-    temperature: Literal["Cold", "Hot", "RoomTemp"]
+    temperature: Ai2ThorTemperature
     isHeatSource: bool
     isColdSource: bool
 
