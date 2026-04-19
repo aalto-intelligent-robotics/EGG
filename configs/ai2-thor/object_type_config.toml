@@ -1,0 +1,1999 @@
+[AlarmClock]
+compatible_receptacles = ["Box", "Dresser", "Desk", "SideTable", "DiningTable", "TVStand", "CoffeeTable", "CounterTop", "Shelf"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[AluminumFoil]
+compatible_receptacles = []
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Apple]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Microwave", "Fridge", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "Desk", "CounterTop", "GarbageCan", "Dresser"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = true
+is_openable = false
+is_receptacle = false
+
+[AppleSliced]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Microwave", "Fridge", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "Desk", "CounterTop", "GarbageCan", "Dresser"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[ArmChair]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[BaseballBat]
+compatible_receptacles = ["Bed", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "Desk", "CounterTop"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[BasketBall]
+compatible_receptacles = ["Sofa", "ArmChair", "Dresser", "Desk", "Bed", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Bathtub]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[BathtubBasin]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Bed]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = true
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Blinds]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = false
+
+[Book]
+compatible_receptacles = ["Sofa", "ArmChair", "Box", "Ottoman", "Dresser", "Desk", "Bed", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = false
+
+[Boots]
+compatible_receptacles = []
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Bottle]
+compatible_receptacles = ["Fridge", "Box", "Dresser", "Desk", "Sink", "SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = true
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Bowl]
+compatible_receptacles = ["Microwave", "Fridge", "Dresser", "Desk", "Sink", "SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = true
+is_dirtyable = true
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Box]
+compatible_receptacles = ["Sofa", "ArmChair", "Dresser", "Desk", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Ottoman"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = true
+
+[Bread]
+compatible_receptacles = ["Microwave", "Fridge", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "Desk", "CounterTop", "GarbageCan", "Plate"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = true
+is_openable = false
+is_receptacle = false
+
+[BreadSliced]
+compatible_receptacles = ["Microwave", "Fridge", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "Desk", "CounterTop", "GarbageCan", "Toaster", "Plate"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = true
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[ButterKnife]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Mug", "Plate", "Cup", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "Desk", "CounterTop", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Cabinet]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = true
+
+[Candle]
+compatible_receptacles = ["Box", "Dresser", "Desk", "Toilet", "Cart", "Bathtub", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[CD]
+compatible_receptacles = ["Box", "Ottoman", "Dresser", "Desk", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan", "Safe", "Sofa", "ArmChair"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[CellPhone]
+compatible_receptacles = ["Sofa", "ArmChair", "Box", "Ottoman", "Dresser", "Desk", "Bed", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "Safe"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = true
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Chair]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Cloth]
+compatible_receptacles = ["Sofa", "ArmChair", "Box", "Ottoman", "Dresser", "LaundryHamper", "Desk", "Toilet", "Cart", "BathtubBasin", "Bathtub", "Sink", "SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = true
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[CoffeeMachine]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = true
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[CoffeeTable]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[CounterTop]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[CreditCard]
+compatible_receptacles = ["Sofa", "ArmChair", "Box", "Ottoman", "Dresser", "Desk", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Cup]
+compatible_receptacles = ["Microwave", "Fridge", "Dresser", "Desk", "Sink", "SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = true
+is_dirtyable = true
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Curtains]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Desk]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[DeskLamp]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Desktop]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[DiningTable]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[DishSponge]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Plate", "Box", "Toilet", "Cart", "BathtubBasin", "Bathtub", "Sink", "SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[DogBed]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Drawer]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = true
+
+[Dresser]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Dumbbell]
+compatible_receptacles = []
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Egg]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Microwave", "Fridge", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = true
+is_openable = false
+is_receptacle = false
+
+[EggCracked]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Microwave", "Fridge", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = true
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Faucet]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Floor]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[FloorLamp]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Footstool]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Fork]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Mug", "Plate", "Cup", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Fridge]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = true
+is_sliceable = false
+is_openable = true
+is_receptacle = true
+
+[GarbageBag]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[GarbageCan]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[HandTowel]
+compatible_receptacles = ["HandTowelHolder"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[HandTowelHolder]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[HousePlant]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = true
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Kettle]
+compatible_receptacles = ["DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Sink", "SinkBasin", "Cabinet", "StoveBurner", "Shelf"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = true
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = false
+
+[KeyChain]
+compatible_receptacles = ["Sofa", "ArmChair", "Box", "Ottoman", "Dresser", "Desk", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "Safe"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Knife]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Mug", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Ladle]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Plate", "Sink", "SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Laptop]
+compatible_receptacles = ["Sofa", "ArmChair", "Ottoman", "Dresser", "Desk", "Bed", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = true
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = false
+
+[LaundryHamper]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Lettuce]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Fridge", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = true
+is_openable = false
+is_receptacle = false
+
+[LettuceSliced]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Fridge", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[LightSwitch]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Microwave]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = true
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = true
+
+[Mirror]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = true
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Mug]
+compatible_receptacles = ["SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = true
+is_dirtyable = true
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Newspaper]
+compatible_receptacles = ["Sofa", "ArmChair", "Ottoman", "Dresser", "Desk", "Bed", "Toilet", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Ottoman]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Painting]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Pan]
+compatible_receptacles = ["DiningTable", "CounterTop", "TVStand", "CoffeeTable", "SideTable", "Sink", "SinkBasin", "Cabinet", "StoveBurner", "Fridge"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = true
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[PaperTowelRoll]
+compatible_receptacles = []
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = true
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Pen]
+compatible_receptacles = ["Mug", "Box", "Dresser", "Desk", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Pencil]
+compatible_receptacles = ["Mug", "Box", "Dresser", "Desk", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[PepperShaker]
+compatible_receptacles = ["DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Drawer", "Cabinet", "Shelf"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Pillow]
+compatible_receptacles = ["Sofa", "ArmChair", "Ottoman", "Bed"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Plate]
+compatible_receptacles = ["Microwave", "Fridge", "Dresser", "Desk", "Sink", "SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = true
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Plunger]
+compatible_receptacles = ["Cart", "Cabinet"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Poster]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Pot]
+compatible_receptacles = ["StoveBurner", "Fridge", "Sink", "SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = true
+is_dirtyable = true
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Potato]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Microwave", "Fridge", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = true
+is_heat_source = false
+is_cold_source = false
+is_sliceable = true
+is_openable = false
+is_receptacle = false
+
+[PotatoSliced]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Microwave", "Fridge", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = true
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[RemoteControl]
+compatible_receptacles = ["Sofa", "ArmChair", "Box", "Ottoman", "Dresser", "Desk", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[RoomDecor]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Safe]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = true
+
+[SaltShaker]
+compatible_receptacles = ["DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Drawer", "Cabinet", "Shelf"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[ScrubBrush]
+compatible_receptacles = []
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Shelf]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[ShelvingUnit]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[ShowerCurtain]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = false
+
+[ShowerDoor]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = false
+
+[ShowerGlass]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[ShowerHead]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[SideTable]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Sink]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[SinkBasin]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[SoapBar]
+compatible_receptacles = ["Toilet", "Cart", "Bathtub", "BathtubBasin", "Sink", "SinkBasin", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[SoapBottle]
+compatible_receptacles = ["Dresser", "Desk", "Toilet", "Cart", "Bathtub", "Sink", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = true
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Sofa]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Spatula]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Plate", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Spoon]
+compatible_receptacles = ["Pot", "Pan", "Bowl", "Mug", "Plate", "Cup", "Sink", "SinkBasin", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[SprayBottle]
+compatible_receptacles = ["Dresser", "Desk", "Toilet", "Cart", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Statue]
+compatible_receptacles = ["Box", "Dresser", "Desk", "Cart", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Safe"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Stool]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[StoveBurner]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = true
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[StoveKnob]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[TableTopDecor]
+compatible_receptacles = []
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[TargetCircle]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[TeddyBear]
+compatible_receptacles = ["Bed", "Sofa", "ArmChair", "Ottoman", "Dresser", "Desk", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Safe"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Television]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = true
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[TennisRacket]
+compatible_receptacles = ["Dresser", "Desk", "Bed", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[TissueBox]
+compatible_receptacles = ["Box", "Dresser", "Desk", "Toilet", "Cart", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = true
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Toaster]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = true
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = true
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Toilet]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = true
+is_receptacle = true
+
+[ToiletPaper]
+compatible_receptacles = ["Dresser", "Desk", "Toilet", "ToiletPaperHanger", "Cart", "Bathtub", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = true
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[ToiletPaperHanger]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[Tomato]
+compatible_receptacles = ["DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Sink", "SinkBasin", "Pot", "Bowl", "Fridge", "GarbageCan", "Plate"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = true
+is_openable = false
+is_receptacle = false
+
+[TomatoSliced]
+compatible_receptacles = ["DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Sink", "SinkBasin", "Pot", "Bowl", "Fridge", "GarbageCan", "Plate"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Towel]
+compatible_receptacles = ["TowelHolder"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[TowelHolder]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[TVStand]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = true
+
+[VacuumCleaner]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = true
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Vase]
+compatible_receptacles = ["Box", "Dresser", "Desk", "Cart", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Safe"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Watch]
+compatible_receptacles = ["Box", "Dresser", "Desk", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer", "Safe"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[WateringCan]
+compatible_receptacles = ["Dresser", "Desk", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "Drawer"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = false
+can_fill_with_liquid = true
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[Window]
+compatible_receptacles = []
+is_pickupable = false
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = false
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false
+
+[WineBottle]
+compatible_receptacles = ["Fridge", "Dresser", "Desk", "Cabinet", "DiningTable", "TVStand", "CoffeeTable", "SideTable", "CounterTop", "Shelf", "GarbageCan"]
+is_pickupable = true
+is_moveable = false
+is_toggleable = false
+is_breakable = true
+can_fill_with_liquid = true
+is_dirtyable = false
+can_be_used_up = false
+is_cookable = false
+is_heat_source = false
+is_cold_source = false
+is_sliceable = false
+is_openable = false
+is_receptacle = false

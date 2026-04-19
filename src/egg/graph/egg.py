@@ -1,7 +1,10 @@
+# pyright: reportExplicitAny=none, reportAny=none
 from copy import deepcopy
+import tomllib
 import logging
-from typing import Self
-from pydantic import BaseModel, Field, JsonValue, TypeAdapter
+from typing import Self, Any, ClassVar
+from pydantic import BaseModel, Field, JsonValue, TypeAdapter, ConfigDict
+from typing_extensions import override
 
 from egg.graph.event import EventComponents
 from egg.graph.node import ObjectNode, RoomNode
@@ -22,6 +25,8 @@ class EGG(BaseModel):
     EGG (Event-Grounding Graph) framework that grounds events semantic context to spatial geometrics.
     """
 
+    model_config: ClassVar[ConfigDict] = ConfigDict(arbitrary_types_allowed=True)
+
     spatial: SpatialComponents
     events: EventComponents
     use_gt_id: bool = Field(default=True, exclude=True)
@@ -29,7 +34,19 @@ class EGG(BaseModel):
     use_guided_auto_caption: bool = Field(default=True, exclude=True)
     device: str = Field(default="cuda:0", exclude=True)
     do_sample: bool = Field(default=False, exclude=True)
+    object_types_config_file: str | None = Field(default=None, exclude=True)
+    object_types_config: dict[str, dict[str, Any]] = Field(
+        default_factory=dict,
+        exclude=True,
+    )
     node_id_gen: int = Field(default=0, ge=0)
+
+    @override
+    def model_post_init(self, context: Any) -> None:
+        if self.object_types_config_file:
+            with open(self.object_types_config_file, "rb") as f_objects:
+                self.object_types_config = tomllib.load(f_objects)
+        return super().model_post_init(context)
 
     def is_empty(self) -> bool:
         return self.spatial.is_empty() and self.events.is_empty()
@@ -38,17 +55,40 @@ class EGG(BaseModel):
         self.node_id_gen += 1
         return self.node_id_gen
 
+    def get_compatible_receptacles(self, object_name: str) -> list[ObjectNode]:
+        if not self.object_types_config:
+            return []
+        compatible_receptacles: list[ObjectNode] = []
+        object_node = self.spatial.get_object_node_by_name(node_name=object_name)
+        assert isinstance(
+            object_node, ObjectNode
+        ), f"{object_name} does not exist in EGG"
+        object_class = object_node.object_class
+        compatible_classes: list[str] = self.object_types_config[object_class][
+            "compatible_receptacles"
+        ]
+        for obj_class in compatible_classes:
+            compatible_receptacles += list(
+                self.spatial.get_object_nodes_by_class(object_class=obj_class).values()
+            )
+        return compatible_receptacles
+
     @classmethod
     def from_ai2thor(
         cls,
         ai2thor_object_metadata: list[dict[str, JsonValue]],
         ai2thor_house_metadata: dict[str, JsonValue],
+        object_types_config_file: str | None = None,
     ) -> Self:
 
         node_id_gen: int = 0
         list_adapter = TypeAdapter(list[dict[str, JsonValue]])
 
-        egg = cls(spatial=SpatialComponents(), events=EventComponents())
+        egg = cls(
+            spatial=SpatialComponents(),
+            events=EventComponents(),
+            object_types_config_file=object_types_config_file,
+        )
 
         rooms_metadata: list[dict[str, JsonValue]] = list_adapter.validate_python(
             ai2thor_house_metadata["rooms"]
@@ -69,6 +109,7 @@ class EGG(BaseModel):
             obj_node = ObjectNode.from_ai2thor(
                 node_id=node_id_gen,
                 object_metadata=Ai2ThorObjectMetadata.model_validate(obj),
+                # object_types_config=
             )
             egg.spatial.add_object_node(new_object_node=obj_node)
             node_id_gen += 1

@@ -265,6 +265,7 @@ class ObjectNode(SpatialNode):
             receptacle_object_ids=object_metadata.receptacleObjectIds,
             temperature=object_metadata.temperature,
         )
+        # TODO: Use config file
         object_capabilities = cls.ObjectCapabilities(
             is_pickupable=object_metadata.pickupable,
             is_moveable=object_metadata.moveable,
