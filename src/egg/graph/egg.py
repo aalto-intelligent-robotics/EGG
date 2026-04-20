@@ -1,5 +1,6 @@
 # pyright: reportExplicitAny=none, reportAny=none
 from copy import deepcopy
+from datetime import datetime
 import tomllib
 import logging
 from typing import Self, Any, ClassVar
@@ -7,10 +8,15 @@ from pydantic import BaseModel, Field, JsonValue, TypeAdapter, ConfigDict
 from typing_extensions import override
 
 from egg.graph.event import EventComponents
-from egg.graph.node import ObjectNode, RoomNode
+from egg.graph.node import AgentNode, ObjectNode, RoomNode
 from egg.graph.spatial import SpatialComponents
-from egg.utils.data import Ai2ThorObjectMetadata, Ai2ThorRoomMetadata
+from egg.utils.data import (
+    Ai2ThorAgentMetadata,
+    Ai2ThorObjectMetadata,
+    Ai2ThorRoomMetadata,
+)
 from egg.utils.logger import getLogger
+from egg.utils.timestamp import datetime_to_ns
 
 logger: logging.Logger = getLogger(
     name=__name__,
@@ -27,6 +33,7 @@ class EGG(BaseModel):
 
     model_config: ClassVar[ConfigDict] = ConfigDict(arbitrary_types_allowed=True)
 
+    agent_node: AgentNode
     spatial: SpatialComponents
     events: EventComponents
     use_gt_id: bool = Field(default=True, exclude=True)
@@ -76,15 +83,31 @@ class EGG(BaseModel):
     @classmethod
     def from_ai2thor(
         cls,
+        ai2thor_agent_metadata: dict[str, JsonValue],
         ai2thor_object_metadata: list[dict[str, JsonValue]],
         ai2thor_house_metadata: dict[str, JsonValue],
         object_types_config_file: str | None = None,
     ) -> Self:
 
         node_id_gen: int = 0
+        dict_adapter = TypeAdapter(dict[str, JsonValue])
         list_adapter = TypeAdapter(list[dict[str, JsonValue]])
 
+        agent_metadata: dict[str, JsonValue] = dict_adapter.validate_python(
+            ai2thor_agent_metadata
+        )
+        agent_state = AgentNode.AgentState.from_ai2thor(
+            agent_metadata=Ai2ThorAgentMetadata.model_validate(agent_metadata)
+        )
+        agent_node = AgentNode(
+            node_id=node_id_gen,
+            name="agent",
+            timestamped_states={datetime_to_ns(datetime.now()): agent_state},
+        )
+        node_id_gen += 1
+
         egg = cls(
+            agent_node=agent_node,
             spatial=SpatialComponents(),
             events=EventComponents(),
             object_types_config_file=object_types_config_file,
@@ -179,6 +202,7 @@ class EGG(BaseModel):
         egg_str = ""
         egg_str += self.spatial.pretty_str()
         egg_str += self.events.pretty_str()
+        egg_str += self.agent_node.pretty_str()
         # edge_str = "\n🔗🔗🔗 EDGES 🔗🔗🔗\n"
         # for edge in self.event_edges:
         #     edge_str += edge.pretty_str()

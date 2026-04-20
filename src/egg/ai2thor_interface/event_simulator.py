@@ -1,4 +1,6 @@
 # pyright: reportExplicitAny=none, reportAny=none
+from datetime import datetime
+from pydantic import JsonValue
 from scipy.spatial.distance import cdist
 import numpy as np
 import random
@@ -10,6 +12,9 @@ from numpy import empty
 from shapely.geometry import Point, MultiPoint, Polygon
 from shapely.geometry import JOIN_STYLE
 
+from egg.utils.data import Ai2ThorObjectMetadata
+from egg.utils.timestamp import datetime_to_ns
+
 _JOIN_STYLE = {
     "mitre": JOIN_STYLE.mitre,
     "miter": JOIN_STYLE.mitre,
@@ -18,9 +23,10 @@ _JOIN_STYLE = {
 }
 
 from egg.graph.egg import EGG
-from egg.graph.node import ObjectNode
+from egg.graph.node import AgentNode, ObjectNode
 from egg.utils.geometry import Position, Rotation
 from egg.utils.logger import getLogger
+import egg.ai2thor_interface.navigation as ai2thor_nav
 
 logger: logging.Logger = getLogger(
     name=__name__,
@@ -46,23 +52,52 @@ class EventSimulator:
         return object_node
 
     def get_receptacle_object(self, receptacle_name: str) -> ObjectNode:
-        receptacle_node = self.egg.spatial.get_object_node_by_name(receptacle_name)
+        receptacle_object_node = self.egg.spatial.get_object_node_by_name(
+            receptacle_name
+        )
         assert isinstance(
-            receptacle_node, ObjectNode
-        ), f"{receptacle_node} does not exist in EGG"
+            receptacle_object_node, ObjectNode
+        ), f"{receptacle_object_node} does not exist in EGG"
         assert (
-            receptacle_node.capabilities.is_receptacle
+            receptacle_object_node.capabilities.is_receptacle
         ), f"{receptacle_name} is not a receptacle."
-        return receptacle_node
+        return receptacle_object_node
 
-    def get_agent_position(self) -> tuple[Position, Rotation]:
+    def get_agent_state(self) -> tuple[Position, Rotation, float, bool]:
         event = self.ai2thor_controller.last_event
         assert isinstance(event, Event)
-        agent_metadata: dict[str, float] = event.metadata["agent"]
+        agent_metadata: dict[str, float | bool] = event.metadata["agent"]
         return (
             Position.model_validate(agent_metadata["position"]),
             Rotation.model_validate(agent_metadata["rotation"]),
+            agent_metadata["cameraHorizon"],
+            agent_metadata["isStanding"],
         )
+
+    def get_object_state(self, object_name: str) -> ObjectNode.ObjectState | None:
+        event = self.ai2thor_controller.last_event
+        assert isinstance(event, Event)
+        all_objects_metadata: list[dict[str, Any]] = event.metadata["objects"]
+        for object_metadata in all_objects_metadata:
+            if object_metadata["name"] == object_name:
+                object_state = ObjectNode.ObjectState.from_ai2thor(
+                    object_metadata=Ai2ThorObjectMetadata.model_validate(
+                        object_metadata
+                    )
+                )
+                return object_state
+        logger.warning(f"Could not retrieve metadata of {object_name}")
+        return None
+
+    def get_object_being_held_by_agent(self) -> str | None:
+        event = self.ai2thor_controller.last_event
+        assert isinstance(event, Event)
+        all_objects_metadata: list[dict[str, Any]] = event.metadata["objects"]
+        for object_metadata in all_objects_metadata:
+            if object_metadata["isPickedUp"] == True:
+                return str(object_metadata["name"])
+        logger.warning(f"Could not retrieve metadata of object being held")
+        return None
 
     def get_reachable_positions(self) -> list[Position]:
         metadata = self.ai2thor_controller.step(action="GetReachablePositions").metadata
@@ -72,12 +107,14 @@ class EventSimulator:
         return reachable_positions
 
     def get_interactable_poses(
-        self, object_name: str
-    ) -> list[tuple[Position, float, bool, float]]:
+        self,
+        object_name: str,
+        horizons: list[float],
+    ) -> list[tuple[Position, Rotation, bool, float]]:
         event = self.ai2thor_controller.step(
             action="GetInteractablePoses",
             objectId=object_name,
-            horizons=[-30, 0, 30, 60],
+            horizons=horizons,
             standings=[True],
         )
 
@@ -85,7 +122,7 @@ class EventSimulator:
         return [
             (
                 Position(x=p["x"], y=p["y"], z=p["z"]),
-                p["rotation"],
+                Rotation(x=0, y=p["rotation"], z=0),
                 p["standing"],
                 p["horizon"],
             )
@@ -94,16 +131,19 @@ class EventSimulator:
 
     def get_closest_interactable_poses(
         self, object_name: str
-    ) -> tuple[Position, float]:
+    ) -> tuple[Position, Rotation]:
 
-        interactable_poses = self.get_interactable_poses(object_name=object_name)
+        agent_position, _, agent_horizon, _ = self.get_agent_state()
+        interactable_poses = self.get_interactable_poses(
+            object_name=object_name, horizons=[agent_horizon]
+        )
         interactable_positions: list[Position] = [p[0] for p in interactable_poses]
-        interactable_angles: list[float] = [p[1] for p in interactable_poses]
+        interactable_angles: list[float] = [p[1].y for p in interactable_poses]
 
         R = np.asarray(
             [p.as_numpy_2d().reshape(-1)[:2] for p in interactable_positions], float
         )
-        robot_xz = self.get_agent_position()[0].as_numpy_2d().reshape(-1)[:2]
+        robot_xz = agent_position.as_numpy_2d().reshape(-1)[:2]
 
         # Distances
         d_robot = cdist(R, robot_xz[None, :], metric="euclidean").ravel()
@@ -112,7 +152,7 @@ class EventSimulator:
         best_idx = int(np.sort(d_robot)[0])
         desired_yaw_deg = interactable_angles[best_idx]
 
-        return interactable_positions[best_idx], desired_yaw_deg
+        return interactable_positions[best_idx], Rotation(x=0, y=desired_yaw_deg, z=0)
 
     def get_free_spawn_coordinates_on_receptacle(
         self,
@@ -123,12 +163,12 @@ class EventSimulator:
         spawn_coordinates: list[dict[str, float]] = []
         free_spawn_coordinates: list[Position] = []
 
-        receptacle_node = self.egg.spatial.get_object_node_by_name(
+        receptacle_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=receptacle_name
         )
-        if isinstance(receptacle_node, ObjectNode):
+        if isinstance(receptacle_object_node, ObjectNode):
             assert (
-                receptacle_node.capabilities.is_receptacle
+                receptacle_object_node.capabilities.is_receptacle
             ), f"Cannot get spawn coordinate from {receptacle_name} because it's not a receptacle"
             metadata = self.ai2thor_controller.step(
                 action="GetSpawnCoordinatesAboveReceptacle",
@@ -140,7 +180,7 @@ class EventSimulator:
 
             if remove_occupied_spawn_coordinates:
                 _, receptacle_latest_state = (
-                    receptacle_node.get_previous_timestamp_and_states()
+                    receptacle_object_node.get_previous_timestamp_and_states()
                 )
                 if isinstance(receptacle_latest_state, ObjectNode.ObjectState):
                     objects_on_receptacle = (
@@ -294,3 +334,247 @@ class EventSimulator:
                         f"Succesfully placed {object_name} on {receptacle_name} at {spawn_coord}."
                     )
         return spawn_coord, free_spawn_coordinates
+
+    def move_to_position(
+        self, nav_position: Position, nav_angle: Rotation, teleport: bool = False
+    ) -> Event:
+        if teleport:
+            event = self.ai2thor_controller.step(
+                action="Teleport",
+                position=nav_position.model_dump(),
+                rotation=nav_angle.model_dump(),
+                standing=True,
+            )
+            return event
+        else:
+            raise NotImplemented
+
+    def pick(self, pick_object_name: str, teleport: bool = False):
+        picked_up_object_node = self.get_picked_up_oject(object_name=pick_object_name)
+        _, picked_up_object_prev_state = (
+            picked_up_object_node.get_previous_timestamp_and_states()
+        )
+        assert isinstance(
+            picked_up_object_prev_state, ObjectNode.ObjectState
+        ), f"Could not get previous state of {pick_object_name}"
+
+        _, _, agent_horizon, _ = self.get_agent_state()
+        interactable_poses = self.get_interactable_poses(
+            object_name=pick_object_name, horizons=[agent_horizon]
+        )
+
+        parent_receptacles = picked_up_object_prev_state.parent_receptacles
+        opened_parents: list[str] = []
+        if parent_receptacles:
+            for parent in parent_receptacles:
+                parent_node = self.get_receptacle_object(receptacle_name=parent)
+                if parent_node.capabilities.is_openable:
+                    self.try_open(openable_object_name=parent, teleport=teleport)
+                    opened_parents.append(parent)
+        opened_parents.reverse()
+
+        for pose in interactable_poses:
+            pick_nav_position: Position = pose[0]
+            pick_nav_angle: Rotation = pose[1]
+            _ = self.move_to_position(
+                nav_position=pick_nav_position,
+                nav_angle=pick_nav_angle,
+                teleport=teleport,
+            )
+            event = self.ai2thor_controller.step(
+                action="PickupObject",
+                objectId=pick_object_name,
+                forceAction=False,
+                manualInteract=False,
+            )
+            if event.metadata["lastActionSuccess"]:
+                logger.info(
+                    f"Successfully picked up {pick_object_name} at {pick_nav_position}"
+                )
+                self.update_agent_state(timestamp=None, holding=pick_object_name)
+                self.update_object_state(object_name=pick_object_name, timestamp=None)
+                break
+            else:
+                logger.warning(
+                    f"Unable to pick up {pick_object_name} at {pick_nav_position}"
+                )
+        for parent in opened_parents:
+            self.try_close(openable_object_name=parent, teleport=teleport)
+
+    def try_close(self, openable_object_name: str, teleport: bool = False):
+        openable_object_node = self.egg.spatial.get_object_node_by_name(
+            node_name=openable_object_name
+        )
+        assert isinstance(
+            openable_object_node, ObjectNode
+        ), f"{openable_object_node} does not exists"
+        if openable_object_node.capabilities.is_openable:
+            _, openable_object_prev_state = (
+                openable_object_node.get_previous_timestamp_and_states()
+            )
+            assert isinstance(
+                openable_object_prev_state, ObjectNode.ObjectState
+            ), f"Could not get previous state of {openable_object_name}"
+            _, _, agent_horizon, _ = self.get_agent_state()
+            interactable_poses = self.get_interactable_poses(
+                object_name=openable_object_name, horizons=[agent_horizon]
+            )
+            for pose in interactable_poses:
+                close_nav_position: Position = pose[0]
+                close_nav_angle: Rotation = pose[1]
+                _ = self.move_to_position(
+                    nav_position=close_nav_position,
+                    nav_angle=close_nav_angle,
+                    teleport=teleport,
+                )
+                event = self.ai2thor_controller.step(
+                    action="CloseObject",
+                    objectId=openable_object_name,
+                    forceAction=False,
+                )
+                if event.metadata["lastActionSuccess"]:
+                    logger.info(f"Succesfully closed {openable_object_name}")
+                    self.update_agent_state(timestamp=None)
+                    self.update_object_state(
+                        timestamp=None, object_name=openable_object_name
+                    )
+                    break
+                else:
+                    logger.warning(
+                        f"Could not close {openable_object_name} from {close_nav_position}"
+                    )
+
+    def try_open(self, openable_object_name: str, teleport: bool = False):
+        openable_object_node = self.egg.spatial.get_object_node_by_name(
+            node_name=openable_object_name
+        )
+        assert isinstance(
+            openable_object_node, ObjectNode
+        ), f"{openable_object_node} does not exists"
+        if openable_object_node.capabilities.is_openable:
+            _, openable_object_prev_state = (
+                openable_object_node.get_previous_timestamp_and_states()
+            )
+            assert isinstance(
+                openable_object_prev_state, ObjectNode.ObjectState
+            ), f"Could not get previous state of {openable_object_name}"
+            _, _, agent_horizon, _ = self.get_agent_state()
+            interactable_poses = self.get_interactable_poses(
+                object_name=openable_object_name, horizons=[agent_horizon]
+            )
+            for pose in interactable_poses:
+                open_nav_position: Position = pose[0]
+                open_nav_angle: Rotation = pose[1]
+                _ = self.move_to_position(
+                    nav_position=open_nav_position,
+                    nav_angle=open_nav_angle,
+                    teleport=teleport,
+                )
+                event = self.ai2thor_controller.step(
+                    action="OpenObject",
+                    objectId=openable_object_name,
+                    openness=1,
+                    forceAction=False,
+                )
+                if event.metadata["lastActionSuccess"]:
+                    logger.info(f"Succesfully opened {openable_object_name}")
+                    self.update_agent_state(timestamp=None)
+                    self.update_object_state(
+                        object_name=openable_object_name, timestamp=None
+                    )
+                    break
+                else:
+                    logger.warning(
+                        f"Could not open {openable_object_name} from {open_nav_position}"
+                    )
+
+    def place(self, receptacle_object_name: str, teleport: bool = False):
+        # TODO: Add sanity check that robot is holding sth
+        receptacle_object_node = self.get_receptacle_object(
+            receptacle_name=receptacle_object_name
+        )
+        _, receptacle_object_prev_state = (
+            receptacle_object_node.get_previous_timestamp_and_states()
+        )
+        assert isinstance(
+            receptacle_object_prev_state, ObjectNode.ObjectState
+        ), f"Could not get previous state of {receptacle_object_name}"
+        held_object_name = self.get_object_being_held_by_agent()
+        assert held_object_name, f"Robot not holding any object but trying to place"
+
+        _, _, agent_camera_horizon, _ = self.get_agent_state()
+        interactable_poses = self.get_interactable_poses(
+            object_name=receptacle_object_name, horizons=[agent_camera_horizon]
+        )
+
+        self.try_open(openable_object_name=receptacle_object_name, teleport=teleport)
+        for pose in interactable_poses:
+            place_nav_position: Position = pose[0]
+            place_nav_angle: Rotation = pose[1]
+            _ = self.move_to_position(
+                nav_position=place_nav_position,
+                nav_angle=place_nav_angle,
+                teleport=teleport,
+            )
+            event = self.ai2thor_controller.step(
+                action="PutObject",
+                objectId=receptacle_object_name,
+                forceAction=False,
+                placeStationary=True,
+            )
+            if event.metadata["lastActionSuccess"]:
+                logger.info(
+                    f"Succesfully placed object on {receptacle_object_name} at {place_nav_position}"
+                )
+                self.update_agent_state(timestamp=None)
+                self.update_object_state(
+                    timestamp=None, object_name=receptacle_object_name
+                )
+                self.update_object_state(timestamp=None, object_name=held_object_name)
+                break
+            else:
+                logger.warning(
+                    f"Unable to place object at {receptacle_object_name} at {place_nav_position}, retrying"
+                )
+            self.try_close(
+                openable_object_name=receptacle_object_name, teleport=teleport
+            )
+
+    def update_agent_state(self, timestamp: int | None, holding: str | None = None):
+        (
+            agent_position,
+            agent_rotation,
+            agent_camera_horizon,
+            agent_is_standing,
+        ) = self.get_agent_state()
+        agent_state = AgentNode.AgentState(
+            position=agent_position,
+            rotation=agent_rotation,
+            camera_horizon=agent_camera_horizon,
+            is_standing=agent_is_standing,
+            holding=holding,
+        )
+        if timestamp is None:
+            timestamp = datetime_to_ns(datetime.now())
+        self.egg.agent_node.timestamped_states.update({timestamp: agent_state})
+
+    def update_object_state(self, object_name: str, timestamp: int | None):
+        object_node = self.egg.spatial.get_object_node_by_name(node_name=object_name)
+        assert object_node
+        object_state = self.get_object_state(object_name=object_name)
+        if object_state:
+            if not timestamp:
+                timestamp = datetime_to_ns(datetime.now())
+            object_node.timestamped_states.update({timestamp: object_state})
+
+    def pick_and_place(
+        self,
+        pick_object_name: str,
+        place_receptacle_name: str,
+        teleport: bool = False,
+        close_receptacle_after_placing: bool = True,
+    ):
+        # TODO: Update EGG State after every action
+        self.pick(pick_object_name=pick_object_name, teleport=teleport)
+        self.place(receptacle_object_name=place_receptacle_name, teleport=teleport)
+        _ = self.ai2thor_controller.step(action="Done")

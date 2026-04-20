@@ -1,4 +1,5 @@
 from datetime import datetime
+from dis import Positions
 import sys
 import numpy as np
 from numpy.typing import NDArray
@@ -7,8 +8,13 @@ from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import Annotated, ClassVar, Literal
 from typing_extensions import Self
 
-from egg.utils.data import Ai2ThorObjectMetadata, Ai2ThorRoomMetadata, Ai2ThorTemperature
-from egg.utils.geometry import Polygon, Position, Odometry
+from egg.utils.data import (
+    Ai2ThorAgentMetadata,
+    Ai2ThorObjectMetadata,
+    Ai2ThorRoomMetadata,
+    Ai2ThorTemperature,
+)
+from egg.utils.geometry import Polygon, Position, Odometry, Rotation
 from egg.utils.logger import getLogger
 from egg.utils.geometry import AxisAlignedBoundingBox
 from egg.utils.timestamp import (
@@ -142,6 +148,59 @@ class EventNode(GraphNode):
         return event_node_str
 
 
+class AgentNode(SpatialNode):
+    class AgentState(BaseModel):
+        model_config: ClassVar[ConfigDict] = ConfigDict(
+            arbitrary_types_allowed=True, validate_assignment=True
+        )
+        position: Position
+        rotation: Rotation
+        camera_horizon: float
+        is_standing: bool
+        holding: str | None = None
+
+        @classmethod
+        def from_ai2thor(cls, agent_metadata: Ai2ThorAgentMetadata) -> Self:
+            return cls(
+                position=agent_metadata.position,
+                rotation=agent_metadata.rotation,
+                camera_horizon=agent_metadata.cameraHorizon,
+                is_standing=agent_metadata.isStanding,
+            )
+
+    timestamped_states: dict[int, AgentState] = Field(default_factory=dict)
+
+    def state_str(self) -> str:
+        state_str = "\n"
+        for ts, ts_state in self.timestamped_states.items():
+            state_str += (
+                f"\n\t- {ns_to_datetime(ts)}:"
+                + f"\n\t\t- Position: {ts_state.position}"
+                + f"\n\t\t- Rotation: {ts_state.rotation}"
+                + f"\n\t\t- Camera Horizon: {ts_state.camera_horizon}"
+                + f"\n\t\t- Standing: {ts_state.is_standing}"
+                + f"\n\t\t- Holding: {ts_state.holding}"
+            )
+        return state_str
+
+    def pretty_str(self) -> str:
+        """
+        Generates a formatted, human-readable string for a RoomNode.
+
+        :returns: String representing the room node.
+        :rtype: str
+        """
+
+        room_str = (
+            "\n🤖 Node info:\n"
+            + f"- Node ID: {self.node_id}\n"
+            + f"Name: {self.name}\n"
+            + f"Node type: Agent\n"
+            + f"Timestamped states: {self.state_str()}\n"
+        )
+        return room_str
+
+
 class RoomNode(SpatialNode):
     """
     Represents a room node, extending SpatialNode by adding position data.
@@ -214,6 +273,25 @@ class ObjectNode(SpatialNode):
         is_openable: bool = Field(default=False, frozen=True)
         is_receptacle: bool = Field(default=False, frozen=True)
 
+        @classmethod
+        @classmethod
+        def from_ai2thor(cls, object_metadata: Ai2ThorObjectMetadata) -> Self:
+            return cls(
+                is_pickupable=object_metadata.pickupable,
+                is_moveable=object_metadata.moveable,
+                is_toggleable=object_metadata.toggleable,
+                is_breakable=object_metadata.breakable,
+                can_fill_with_liquid=object_metadata.canFillWithLiquid,
+                is_dirtyable=object_metadata.dirtyable,
+                can_be_used_up=object_metadata.canBeUsedUp,
+                is_cookable=object_metadata.cookable,
+                is_heat_source=object_metadata.isHeatSource,
+                is_cold_source=object_metadata.isColdSource,
+                is_sliceable=object_metadata.sliceable,
+                is_openable=object_metadata.openable,
+                is_receptacle=object_metadata.receptacle,
+            )
+
     class ObjectState(BaseModel):
         model_config: ClassVar[ConfigDict] = ConfigDict(
             arbitrary_types_allowed=True, validate_assignment=True
@@ -237,50 +315,42 @@ class ObjectNode(SpatialNode):
         instance_view: NDArray[np.uint8] | None = None
         openness: Annotated[float, Field(ge=0.0, le=1.0)] = 0.0
 
+        @classmethod
+        def from_ai2thor(cls, object_metadata: Ai2ThorObjectMetadata) -> Self:
+            bounding_box = object_metadata.get_bounding_box()
+            bounding_box.round(ndigits=3)
+            return cls(
+                position=bounding_box.center,
+                bounding_box=bounding_box,
+                is_visible=object_metadata.visible,
+                is_picked_up=object_metadata.isPickedUp,
+                is_moving=object_metadata.isMoving,
+                is_toggled=object_metadata.isToggled,
+                is_broken=object_metadata.isBroken,
+                is_filled_with_liquid=object_metadata.isFilledWithLiquid,
+                is_dirty=object_metadata.isDirty,
+                is_cooked=object_metadata.isCooked,
+                is_open=object_metadata.isOpen,
+                openness=object_metadata.openness,
+                parent_receptacles=object_metadata.parentReceptacles,
+                receptacle_object_ids=object_metadata.receptacleObjectIds,
+                temperature=object_metadata.temperature,
+            )
+
     object_class: str = Field(frozen=True)
 
     caption: str | None = None
 
     capabilities: ObjectCapabilities
-    timestamped_states: dict[int, ObjectState]
+    timestamped_states: dict[int, ObjectState] = Field(default_factory=dict)
 
     @classmethod
     def from_ai2thor(cls, node_id: int, object_metadata: Ai2ThorObjectMetadata) -> Self:
-        bounding_box = object_metadata.get_bounding_box()
-        bounding_box.round(ndigits=3)
-        object_state = cls.ObjectState(
-            position=bounding_box.center,
-            bounding_box=bounding_box,
-            is_visible=object_metadata.visible,
-            is_picked_up=object_metadata.isPickedUp,
-            is_moving=object_metadata.isMoving,
-            is_toggled=object_metadata.isToggled,
-            is_broken=object_metadata.isBroken,
-            is_filled_with_liquid=object_metadata.isFilledWithLiquid,
-            is_dirty=object_metadata.isDirty,
-            is_cooked=object_metadata.isCooked,
-            is_open=object_metadata.isOpen,
-            openness=object_metadata.openness,
-            parent_receptacles=object_metadata.parentReceptacles,
-            receptacle_object_ids=object_metadata.receptacleObjectIds,
-            temperature=object_metadata.temperature,
-        )
         # TODO: Use config file
-        object_capabilities = cls.ObjectCapabilities(
-            is_pickupable=object_metadata.pickupable,
-            is_moveable=object_metadata.moveable,
-            is_toggleable=object_metadata.toggleable,
-            is_breakable=object_metadata.breakable,
-            can_fill_with_liquid=object_metadata.canFillWithLiquid,
-            is_dirtyable=object_metadata.dirtyable,
-            can_be_used_up=object_metadata.canBeUsedUp,
-            is_cookable=object_metadata.cookable,
-            is_heat_source=object_metadata.isHeatSource,
-            is_cold_source=object_metadata.isColdSource,
-            is_sliceable=object_metadata.sliceable,
-            is_openable=object_metadata.openable,
-            is_receptacle=object_metadata.receptacle,
+        object_capabilities = cls.ObjectCapabilities.from_ai2thor(
+            object_metadata=object_metadata
         )
+        object_state = cls.ObjectState.from_ai2thor(object_metadata=object_metadata)
         return cls(
             node_id=node_id,
             name=object_metadata.objectId,

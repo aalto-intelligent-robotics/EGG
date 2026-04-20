@@ -1,10 +1,19 @@
 from typing import ClassVar, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
-from egg.utils.geometry import Position, Dimensions, AxisAlignedBoundingBox
+from egg.utils.geometry import Position, Dimensions, AxisAlignedBoundingBox, Rotation
 
 Ai2ThorTemperature = Literal["Cold", "Hot", "RoomTemp"]
 
+class Ai2ThorAgentMetadata(BaseModel):
+    model_config: ClassVar[ConfigDict] = ConfigDict(extra="allow")
+
+    name: str
+    position: Position
+    rotation: Rotation
+    cameraHorizon: float
+    isStanding: bool
+    inHighFrictionArea: bool
 
 class Ai2ThorRoomMetadata(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="allow")

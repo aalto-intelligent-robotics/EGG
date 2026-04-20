@@ -7,7 +7,7 @@ from copy import deepcopy
 from pydantic import BaseModel, Field, ConfigDict
 from typing_extensions import Any
 
-from egg.graph.node import ObjectNode, RoomNode
+from egg.graph.node import AgentNode, ObjectNode, RoomNode
 from egg.utils.data import Ai2ThorTemperature
 from egg.utils.geometry import AxisAlignedBoundingBox, Position
 from egg.utils.timestamp import datetime_to_ns, ns_to_datetime

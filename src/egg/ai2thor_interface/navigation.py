@@ -11,7 +11,7 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.spatial.distance import cdist
 
-from egg.utils.geometry import Position
+from egg.utils.geometry import Position, Rotation
 from egg.utils.logger import getLogger
 
 logger: logging.Logger = getLogger(
@@ -20,6 +20,14 @@ logger: logging.Logger = getLogger(
     fileLevel=logging.DEBUG,
     log_file="ai2thor_interfaceh/navigation.log",
 )
+
+OrientedNode: TypeAlias = tuple[
+    float, float, int
+]  # (x, z, yaw_idx), yaw_idx in {0,1,2,3}
+Key2D: TypeAlias = tuple[float, float]  # (x, z) snapped to grid
+Command: TypeAlias = dict[
+    str, str
+]  # e.g., {"action": "MoveAhead"} or {"action": "RotateRight"}
 
 
 def normalize_angle_deg(a_deg: float) -> float:
@@ -31,7 +39,7 @@ def select_best_reachable_and_yaw(
     reachable_positions: list[Position],
     target_pos: Position,
     current_pos: Position,
-) -> tuple[Position, int, float]:
+) -> tuple[Position, int, Rotation]:
     if not reachable_positions:
         raise ValueError("reachable_positions is empty")
 
@@ -57,7 +65,11 @@ def select_best_reachable_and_yaw(
         round(bearing_deg / 90.0) * 90.0
     )  # in [0, 360)
 
-    return reachable_positions[best_idx], best_idx, desired_yaw_deg
+    return (
+        reachable_positions[best_idx],
+        best_idx,
+        Rotation(x=0, y=desired_yaw_deg, z=0),
+    )
 
 
 def visualize(
@@ -103,9 +115,6 @@ def visualize(
     ax.legend()
     ax.set_aspect("equal")
     return fig, ax
-
-
-Key2D: TypeAlias = tuple[float, float]  # (x, z) snapped to grid
 
 
 def quantize(value: float, grid_size: float) -> float:
@@ -363,11 +372,6 @@ def build_oriented_graph(
     return OG
 
 
-OrientedNode: TypeAlias = tuple[
-    float, float, int
-]  # (x, z, yaw_idx), yaw_idx in {0,1,2,3}
-
-
 def admissible_heuristic(a: OrientedNode, b: OrientedNode) -> float:
     """
     Heuristic ignoring rotations: straight-line distance between positions.
@@ -416,11 +420,6 @@ def astar_best_to_any_goal(
             "No path found to the goal with the given reachable positions and orientation constraints."
         )
     return best_path
-
-
-Command: TypeAlias = dict[
-    str, Any
-]  # e.g., {"action": "MoveAhead"} or {"action": "RotateRight"}
 
 
 def plan_path_and_command(
