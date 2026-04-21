@@ -31,6 +31,7 @@ class SpatialComponents(BaseModel):
         arbitrary_types_allowed=True, extra="forbid"
     )
 
+    agent_nodes: dict[int, AgentNode] = Field(default_factory=dict)
     room_nodes: dict[int, RoomNode] = Field(default_factory=dict)
     object_nodes: dict[int, ObjectNode] = Field(default_factory=dict)
     map_views: dict[int, NDArray[np.uint8]] = Field(default_factory=dict)
@@ -59,6 +60,15 @@ class SpatialComponents(BaseModel):
             ):
                 return False, object_node.node_id
         return True, new_object_node.node_id
+
+    def add_agent(self, new_agent_node: AgentNode):
+        """
+        Adds a room node to the collection.
+
+        :param new_room_node: The room node to add.
+        :type new_room_node: RoomNode
+        """
+        self.agent_nodes.update({new_agent_node.node_id: new_agent_node})
 
     def add_room_node(self, new_room_node: RoomNode):
         """
@@ -95,6 +105,52 @@ class SpatialComponents(BaseModel):
         :type new_object_node: ObjectNode
         """
         self.object_nodes.update({new_object_node.node_id: new_object_node})
+
+    def update_object_state(
+        self,
+        object_node_id: int,
+        new_object_state: ObjectNode.ObjectState,
+        timestamp: int | None,
+    ):
+        if timestamp is None:
+            timestamp = datetime_to_ns(datetime.now())
+
+        assert isinstance(self.object_nodes[object_node_id], ObjectNode)
+        self.object_nodes[object_node_id].timestamped_states.update(
+            {timestamp: new_object_state}
+        )
+
+    def update_agent_state(
+        self,
+        agent_node_id: int,
+        new_agent_state: AgentNode.AgentState,
+        timestamp: int | None,
+    ):
+        if timestamp is None:
+            timestamp = datetime_to_ns(datetime.now())
+
+        assert isinstance(self.agent_nodes[agent_node_id], AgentNode)
+        self.agent_nodes[agent_node_id].timestamped_states.update(
+            {timestamp: new_agent_state}
+        )
+
+    def remove_agent_node(self, agent_node_id: int):
+        """
+        Removes an agent node by its ID.
+
+        :param agent_node_id: The ID of the agent node to remove.
+        :type agent_node_id: int
+        """
+        _ = self.agent_nodes.pop(agent_node_id)
+
+    def replace_agent_nodes(self, new_agent_nodes: dict[int, AgentNode]):
+        """
+        Replaces all existing agent nodes with a new set.
+
+        :param new_agent_nodes: Dictionary of new agent nodes to set.
+        :type new_agent_nodes: dict[int, agentNode]
+        """
+        self.agent_nodes = new_agent_nodes
 
     def remove_object_node(self, object_node_id: int):
         """
@@ -307,4 +363,6 @@ class SpatialComponents(BaseModel):
             spatial_str += object_node.pretty_str()
         for room_node in self.room_nodes.values():
             spatial_str += room_node.pretty_str()
+        for agent_node in self.agent_nodes.values():
+            spatial_str += agent_node.pretty_str()
         return spatial_str

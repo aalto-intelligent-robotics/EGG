@@ -33,7 +33,6 @@ class EGG(BaseModel):
 
     model_config: ClassVar[ConfigDict] = ConfigDict(arbitrary_types_allowed=True)
 
-    agent_node: AgentNode
     spatial: SpatialComponents
     events: EventComponents
     use_gt_id: bool = Field(default=True, exclude=True)
@@ -107,11 +106,12 @@ class EGG(BaseModel):
         node_id_gen += 1
 
         egg = cls(
-            agent_node=agent_node,
             spatial=SpatialComponents(),
             events=EventComponents(),
             object_types_config_file=object_types_config_file,
         )
+
+        egg.spatial.add_agent(new_agent_node=agent_node)
 
         rooms_metadata: list[dict[str, JsonValue]] = list_adapter.validate_python(
             ai2thor_house_metadata["rooms"]
@@ -202,7 +202,6 @@ class EGG(BaseModel):
         egg_str = ""
         egg_str += self.spatial.pretty_str()
         egg_str += self.events.pretty_str()
-        egg_str += self.agent_node.pretty_str()
         # edge_str = "\n🔗🔗🔗 EDGES 🔗🔗🔗\n"
         # for edge in self.event_edges:
         #     edge_str += edge.pretty_str()

@@ -62,6 +62,8 @@ class EventNode(GraphNode):
     """
     Represents an event node in the graph, capturing event-related metadata.
 
+    :param agent_node_id: ID of agent that causes the event (supports single agent only now)
+    :type agent_node_id: int
     :param event_description: Description of the event.
     :type event_description: str
     :param start: Start timestamp of the event.
@@ -77,6 +79,7 @@ class EventNode(GraphNode):
     :type location: str
     """
 
+    agent_node_id: int
     event_description: str = "Default description"
     start: int = Field(default=0, gt=0)
     end: int = Field(default=1, gt=0)
