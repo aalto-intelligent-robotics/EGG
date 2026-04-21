@@ -79,9 +79,9 @@ class Dimensions(CoordXYZ):
 
 
 class Rotation(CoordXYZ):
-    x: float = Field(ge=0, le=360)
-    y: float = Field(ge=0, le=360)
-    z: float = Field(ge=0, le=360)
+    x: float = Field(ge=-360, le=360)
+    y: float = Field(ge=-360, le=360)
+    z: float = Field(ge=-360, le=360)
 
 
 class Odometry(BaseModel):

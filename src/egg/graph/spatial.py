@@ -217,6 +217,21 @@ class SpatialComponents(BaseModel):
             )
         return self.object_nodes.get(node_id)
 
+    def get_agent_node_by_id(self, node_id: int) -> AgentNode | None:
+        """
+        Retrieves an agent node by its ID.
+
+        :param node_id: ID of the agent node to retrieve.
+        :type node_id: int
+        :returns: The agent node with the given ID or None.
+        :rtype: Optional[agentNode]
+        """
+        if node_id not in self.agent_nodes.keys():
+            logger.warning(
+                f"Trying to access non-existent agent node {node_id}, available keys are {self.agent_nodes.keys()}"
+            )
+        return self.agent_nodes.get(node_id)
+
     def get_all_object_classes(self) -> set[str]:
         object_class_set: set[str] = set()
         for object_node in self.get_all_object_nodes().values():
@@ -241,6 +256,15 @@ class SpatialComponents(BaseModel):
         """
         return deepcopy(self.object_nodes)
 
+    def get_all_agent_nodes(self) -> dict[int, AgentNode]:
+        """
+        Retrieves all object nodes.
+
+        :returns: A dictionary of all object nodes.
+        :rtype: dict[int, AgenttNode]
+        """
+        return deepcopy(self.agent_nodes)
+
     def get_object_nodes_by_class(self, object_class: str) -> dict[int, ObjectNode]:
         """
         Retrieves object nodes by their class.
@@ -256,7 +280,9 @@ class SpatialComponents(BaseModel):
                 object_nodes_by_class.update({object_node.node_id: object_node})
         return object_nodes_by_class
 
-    def get_object_node_by_name(self, node_name: str) -> ObjectNode | None:
+    def get_object_node_by_name(
+        self, node_name: str
+    ) -> tuple[int | None, ObjectNode | None]:
         """
         Retrieves an object node by its name.
 
@@ -267,11 +293,13 @@ class SpatialComponents(BaseModel):
         """
         for object_node in self.get_all_object_nodes().values():
             if object_node.name == node_name:
-                return object_node
+                return object_node.node_id, object_node
         logger.warning(f"Trying to look for non-existent object {node_name}")
-        return None
+        return None, None
 
-    def get_room_node_by_name(self, node_name: str) -> RoomNode | None:
+    def get_room_node_by_name(
+        self, node_name: str
+    ) -> tuple[int | None, RoomNode | None]:
         """
         Retrieves a room node by its name.
 
@@ -282,9 +310,26 @@ class SpatialComponents(BaseModel):
         """
         for room_node in self.get_all_room_nodes().values():
             if room_node.name == node_name:
-                return room_node
+                return room_node.node_id, room_node
         logger.warning(f"Trying to look for non-existent room {node_name}")
-        return None
+        return None, None
+
+    def get_agent_node_by_name(
+        self, node_name: str
+    ) -> tuple[int | None, AgentNode | None]:
+        """
+        Retrieves an object node by its name.
+
+        :param node_name: Name of the object node to retrieve.
+        :type node_name: str
+        :returns: The object node with the given name or None.
+        :rtype: Optional[ObjectNode]
+        """
+        for agent_node in self.get_all_agent_nodes().values():
+            if agent_node.name == node_name:
+                return agent_node.node_id, agent_node
+        logger.warning(f"Trying to look for non-existent agent {node_name}")
+        return None, None
 
     def get_object_by_capabilities(
         self,

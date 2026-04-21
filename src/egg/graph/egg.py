@@ -65,7 +65,7 @@ class EGG(BaseModel):
         if not self.object_types_config:
             return []
         compatible_receptacles: list[ObjectNode] = []
-        object_node = self.spatial.get_object_node_by_name(node_name=object_name)
+        _, object_node = self.spatial.get_object_node_by_name(node_name=object_name)
         assert isinstance(
             object_node, ObjectNode
         ), f"{object_name} does not exist in EGG"

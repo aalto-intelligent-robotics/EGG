@@ -42,7 +42,7 @@ class EventSimulator:
         self.ai2thor_controller: Controller = ai2thor_controller
 
     def get_picked_up_oject(self, object_name: str) -> ObjectNode:
-        object_node = self.egg.spatial.get_object_node_by_name(object_name)
+        _, object_node = self.egg.spatial.get_object_node_by_name(object_name)
         assert isinstance(
             object_node, ObjectNode
         ), f"{object_node} does not exist in EGG"
@@ -52,7 +52,7 @@ class EventSimulator:
         return object_node
 
     def get_receptacle_object(self, receptacle_name: str) -> ObjectNode:
-        receptacle_object_node = self.egg.spatial.get_object_node_by_name(
+        _, receptacle_object_node = self.egg.spatial.get_object_node_by_name(
             receptacle_name
         )
         assert isinstance(
@@ -163,7 +163,7 @@ class EventSimulator:
         spawn_coordinates: list[dict[str, float]] = []
         free_spawn_coordinates: list[Position] = []
 
-        receptacle_object_node = self.egg.spatial.get_object_node_by_name(
+        _, receptacle_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=receptacle_name
         )
         if isinstance(receptacle_object_node, ObjectNode):
@@ -207,7 +207,7 @@ class EventSimulator:
         occupied_spawn_coordinates: list[dict[str, float]] = []
         if objects_on_receptacle:
             for object in objects_on_receptacle:
-                obj_node = self.egg.spatial.get_object_node_by_name(object)
+                _, obj_node = self.egg.spatial.get_object_node_by_name(object)
                 assert isinstance(obj_node, ObjectNode)
                 if obj_node.object_class not in ["Floor", "Wall"]:
                     _, obj_state = obj_node.get_previous_timestamp_and_states()
@@ -336,14 +336,18 @@ class EventSimulator:
         return spawn_coord, free_spawn_coordinates
 
     def move_to_position(
-        self, nav_position: Position, nav_angle: Rotation, teleport: bool = False
+        self,
+        nav_position: Position,
+        nav_angle: Rotation,
+        teleport: bool = False,
+        standing: bool = True,
     ) -> Event:
         if teleport:
             event = self.ai2thor_controller.step(
                 action="Teleport",
                 position=nav_position.model_dump(),
                 rotation=nav_angle.model_dump(),
-                standing=True,
+                standing=standing,
             )
             return event
         else:
@@ -359,10 +363,7 @@ class EventSimulator:
         ), f"Could not get previous state of {pick_object_name}"
 
         _, _, agent_horizon, _ = self.get_agent_state()
-        interactable_poses = self.get_interactable_poses(
-            object_name=pick_object_name, horizons=[agent_horizon]
-        )
-
+        
         parent_receptacles = picked_up_object_prev_state.parent_receptacles
         opened_parents: list[str] = []
         if parent_receptacles:
@@ -373,36 +374,48 @@ class EventSimulator:
                     opened_parents.append(parent)
         opened_parents.reverse()
 
-        for pose in interactable_poses:
-            pick_nav_position: Position = pose[0]
-            pick_nav_angle: Rotation = pose[1]
-            _ = self.move_to_position(
-                nav_position=pick_nav_position,
-                nav_angle=pick_nav_angle,
-                teleport=teleport,
-            )
-            event = self.ai2thor_controller.step(
-                action="PickupObject",
-                objectId=pick_object_name,
-                forceAction=False,
-                manualInteract=False,
-            )
-            if event.metadata["lastActionSuccess"]:
-                logger.info(
-                    f"Successfully picked up {pick_object_name} at {pick_nav_position}"
-                )
-                self.update_agent_state(timestamp=None, holding=pick_object_name)
-                self.update_object_state(object_name=pick_object_name, timestamp=None)
+        # self.try_action(action_name="PickupObject", object_name=pick_object_name, teleport=teleport)
+        success_pick: bool = False
+        
+        interactable_poses = self.get_interactable_poses(
+            object_name=pick_object_name, horizons=[agent_horizon]
+        )
+
+        for standing in [True, False]:
+            if success_pick:
                 break
-            else:
-                logger.warning(
-                    f"Unable to pick up {pick_object_name} at {pick_nav_position}"
+            for pose in interactable_poses:
+                pick_nav_position: Position = pose[0]
+                pick_nav_angle: Rotation = pose[1]
+                _ = self.move_to_position(
+                    nav_position=pick_nav_position,
+                    nav_angle=pick_nav_angle,
+                    teleport=teleport,
+                    standing=standing,
                 )
+                event = self.ai2thor_controller.step(
+                    action="PickupObject",
+                    objectId=pick_object_name,
+                    forceAction=False,
+                    manualInteract=False,
+                )
+                if event.metadata["lastActionSuccess"]:
+                    logger.info(
+                        f"Successfully picked up {pick_object_name} at {pick_nav_position}"
+                    )
+                    self.update_agent_state(timestamp=None, holding=pick_object_name)
+                    self.update_visible_objects_states(timestamp=None)
+                    success_pick = True
+                    break
+                else:
+                    logger.warning(
+                        f"Unable to pick up {pick_object_name} at {pick_nav_position}"
+                    )
         for parent in opened_parents:
             self.try_close(openable_object_name=parent, teleport=teleport)
 
     def try_close(self, openable_object_name: str, teleport: bool = False):
-        openable_object_node = self.egg.spatial.get_object_node_by_name(
+        _, openable_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=openable_object_name
         )
         assert isinstance(
@@ -419,33 +432,37 @@ class EventSimulator:
             interactable_poses = self.get_interactable_poses(
                 object_name=openable_object_name, horizons=[agent_horizon]
             )
-            for pose in interactable_poses:
-                close_nav_position: Position = pose[0]
-                close_nav_angle: Rotation = pose[1]
-                _ = self.move_to_position(
-                    nav_position=close_nav_position,
-                    nav_angle=close_nav_angle,
-                    teleport=teleport,
-                )
-                event = self.ai2thor_controller.step(
-                    action="CloseObject",
-                    objectId=openable_object_name,
-                    forceAction=False,
-                )
-                if event.metadata["lastActionSuccess"]:
-                    logger.info(f"Succesfully closed {openable_object_name}")
-                    self.update_agent_state(timestamp=None)
-                    self.update_object_state(
-                        timestamp=None, object_name=openable_object_name
-                    )
+            success_close: bool = False
+            for standing in [True, False]:
+                if success_close:
                     break
-                else:
-                    logger.warning(
-                        f"Could not close {openable_object_name} from {close_nav_position}"
+                for pose in interactable_poses:
+                    close_nav_position: Position = pose[0]
+                    close_nav_angle: Rotation = pose[1]
+                    _ = self.move_to_position(
+                        nav_position=close_nav_position,
+                        nav_angle=close_nav_angle,
+                        teleport=teleport,
+                        standing=standing,
                     )
+                    event = self.ai2thor_controller.step(
+                        action="CloseObject",
+                        objectId=openable_object_name,
+                        forceAction=False,
+                    )
+                    if event.metadata["lastActionSuccess"]:
+                        logger.info(f"Successfully closed {openable_object_name}")
+                        self.update_agent_state(timestamp=None)
+                        self.update_visible_objects_states(timestamp=None)
+                        success_close = True
+                        break
+                    else:
+                        logger.warning(
+                            f"Could not close {openable_object_name} from {close_nav_position}"
+                        )
 
     def try_open(self, openable_object_name: str, teleport: bool = False):
-        openable_object_node = self.egg.spatial.get_object_node_by_name(
+        _, openable_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=openable_object_name
         )
         assert isinstance(
@@ -462,31 +479,42 @@ class EventSimulator:
             interactable_poses = self.get_interactable_poses(
                 object_name=openable_object_name, horizons=[agent_horizon]
             )
-            for pose in interactable_poses:
-                open_nav_position: Position = pose[0]
-                open_nav_angle: Rotation = pose[1]
-                _ = self.move_to_position(
-                    nav_position=open_nav_position,
-                    nav_angle=open_nav_angle,
-                    teleport=teleport,
-                )
-                event = self.ai2thor_controller.step(
-                    action="OpenObject",
-                    objectId=openable_object_name,
-                    openness=1,
-                    forceAction=False,
-                )
-                if event.metadata["lastActionSuccess"]:
-                    logger.info(f"Succesfully opened {openable_object_name}")
-                    self.update_agent_state(timestamp=None)
-                    self.update_object_state(
-                        object_name=openable_object_name, timestamp=None
-                    )
+            success_open: bool = False
+            for standing in [True, False]:
+                if success_open:
                     break
-                else:
-                    logger.warning(
-                        f"Could not open {openable_object_name} from {open_nav_position}"
+                for pose in interactable_poses:
+                    open_nav_position: Position = pose[0]
+                    open_nav_angle: Rotation = pose[1]
+                    _ = self.move_to_position(
+                        nav_position=open_nav_position,
+                        nav_angle=open_nav_angle,
+                        teleport=teleport,
+                        standing=standing,
                     )
+                    event = self.ai2thor_controller.step(
+                        action="OpenObject",
+                        objectId=openable_object_name,
+                        openness=1,
+                        forceAction=False,
+                    )
+                    openable_object_state = self.get_object_state(
+                        object_name=openable_object_name
+                    )
+                    assert isinstance(openable_object_state, ObjectNode.ObjectState)
+                    if (
+                        openable_object_state.openness == 1.0
+                        and openable_object_state.is_open
+                    ):
+                        logger.info(f"Successfully opened {openable_object_name}")
+                        self.update_agent_state(timestamp=None)
+                        self.update_visible_objects_states(timestamp=None)
+                        success_open = True
+                        break
+                    else:
+                        logger.warning(
+                            f"Could not open {openable_object_name} from {open_nav_position}"
+                        )
 
     def place(self, receptacle_object_name: str, teleport: bool = False):
         # TODO: Add sanity check that robot is holding sth
@@ -502,45 +530,82 @@ class EventSimulator:
         held_object_name = self.get_object_being_held_by_agent()
         assert held_object_name, f"Robot not holding any object but trying to place"
 
+        self.try_open(openable_object_name=receptacle_object_name, teleport=teleport)
+        # self.try_action(action_name="PutObject", object_name=receptacle_object_name, teleport=teleport)
         _, _, agent_camera_horizon, _ = self.get_agent_state()
         interactable_poses = self.get_interactable_poses(
             object_name=receptacle_object_name, horizons=[agent_camera_horizon]
         )
-
-        self.try_open(openable_object_name=receptacle_object_name, teleport=teleport)
-        for pose in interactable_poses:
-            place_nav_position: Position = pose[0]
-            place_nav_angle: Rotation = pose[1]
-            _ = self.move_to_position(
-                nav_position=place_nav_position,
-                nav_angle=place_nav_angle,
-                teleport=teleport,
-            )
-            event = self.ai2thor_controller.step(
-                action="PutObject",
-                objectId=receptacle_object_name,
-                forceAction=False,
-                placeStationary=True,
-            )
-            if event.metadata["lastActionSuccess"]:
-                logger.info(
-                    f"Succesfully placed object on {receptacle_object_name} at {place_nav_position}"
-                )
-                self.update_agent_state(timestamp=None)
-                self.update_object_state(
-                    timestamp=None, object_name=receptacle_object_name
-                )
-                self.update_object_state(timestamp=None, object_name=held_object_name)
+        success_place: bool = False
+        for standing in [True, False]:
+            if success_place:
                 break
-            else:
-                logger.warning(
-                    f"Unable to place object at {receptacle_object_name} at {place_nav_position}, retrying"
+            for pose in interactable_poses:
+                place_nav_position: Position = pose[0]
+                place_nav_angle: Rotation = pose[1]
+                _ = self.move_to_position(
+                    nav_position=place_nav_position,
+                    nav_angle=place_nav_angle,
+                    teleport=teleport,
+                    standing=standing,
                 )
-            self.try_close(
-                openable_object_name=receptacle_object_name, teleport=teleport
-            )
+                event = self.ai2thor_controller.step(
+                    action="PutObject",
+                    objectId=receptacle_object_name,
+                    forceAction=False,
+                    placeStationary=True,
+                )
+                if event.metadata["lastActionSuccess"]:
+                    logger.info(
+                        f"Succesfully placed object on {receptacle_object_name} at {place_nav_position}"
+                    )
+                    self.update_agent_state(timestamp=None)
+                    self.update_visible_objects_states(timestamp=None)
+                    success_place = True
+                    break
+                else:
+                    logger.warning(
+                        f"Unable to place object at {receptacle_object_name} at {place_nav_position}, retrying"
+                    )
+        self.try_close(openable_object_name=receptacle_object_name, teleport=teleport)
 
-    def update_agent_state(self, timestamp: int | None, holding: str | None = None):
+    def try_action(self, action_name: str, object_name: str, teleport: bool = False):
+        _, _, agent_camera_horizon, _ = self.get_agent_state()
+        interactable_poses = self.get_interactable_poses(
+            object_name=object_name, horizons=[agent_camera_horizon]
+        )
+        # TODO: Try this by analyzing the object to interact with (BBox/position)
+        for standing in [True, False]:
+            for pose in interactable_poses:
+                nav_position: Position = pose[0]
+                nav_angle: Rotation = pose[1]
+                _ = self.move_to_position(
+                    nav_position=nav_position,
+                    nav_angle=nav_angle,
+                    teleport=teleport,
+                    standing=standing,
+                )
+                event = self.ai2thor_controller.step(
+                    action=action_name,
+                    objectId=object_name,
+                    forceAction=False,
+                    placeStationary=True,
+                )
+                if event.metadata["lastActionSuccess"]:
+                    logger.info(
+                        f"Succesfully perform {action_name} on {object_name} at {nav_position}, {'standing' if standing else 'crouching'}"
+                    )
+                    self.update_agent_state(timestamp=None)
+                    self.update_visible_objects_states(timestamp=None)
+                    break
+                else:
+                    logger.warning(
+                        f"Unable to perform {action_name} on {object_name} at {nav_position}, {'standing' if standing else 'crouching'}. Retrying."
+                    )
+
+    def update_agent_state(
+        self, timestamp: int | None, holding: str | None = None, agent_id: int = 0
+    ):
         (
             agent_position,
             agent_rotation,
@@ -554,18 +619,32 @@ class EventSimulator:
             is_standing=agent_is_standing,
             holding=holding,
         )
-        if timestamp is None:
-            timestamp = datetime_to_ns(datetime.now())
-        self.egg.agent_node.timestamped_states.update({timestamp: agent_state})
+        self.egg.spatial.update_agent_state(
+            agent_node_id=agent_id, new_agent_state=agent_state, timestamp=timestamp
+        )
 
     def update_object_state(self, object_name: str, timestamp: int | None):
-        object_node = self.egg.spatial.get_object_node_by_name(node_name=object_name)
-        assert object_node
+        object_node_id, object_node = self.egg.spatial.get_object_node_by_name(
+            node_name=object_name
+        )
+        assert isinstance(object_node_id, int)
+        assert isinstance(object_node, ObjectNode)
         object_state = self.get_object_state(object_name=object_name)
         if object_state:
-            if not timestamp:
-                timestamp = datetime_to_ns(datetime.now())
-            object_node.timestamped_states.update({timestamp: object_state})
+            self.egg.spatial.update_object_state(
+                object_node_id=object_node_id,
+                new_object_state=object_state,
+                timestamp=timestamp,
+            )
+
+    def update_visible_objects_states(self, timestamp: int | None):
+        for object_name in self.get_visible_objects():
+            self.update_object_state(object_name=object_name, timestamp=timestamp)
+
+    def get_visible_objects(self) -> list[str]:
+        last_event = self.ai2thor_controller.last_event
+        visible_objects = list(last_event.instance_detections2D.keys())
+        return visible_objects
 
     def pick_and_place(
         self,
