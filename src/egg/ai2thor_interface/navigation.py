@@ -424,10 +424,10 @@ def astar_best_to_any_goal(
 
 def plan_path_and_command(
     start_pos: Position,
+    start_yaw_deg: float,
     reachable_positions: list[Position],
     goal_pos: Position,
     grid_size: float = 0.25,
-    initial_yaw_deg: float = 0.0,
     allow_diagonals: bool = False,
     rotation_cost_per_90: float = 0.1,
     move_cost_scale: float = 1.0,
@@ -479,7 +479,7 @@ def plan_path_and_command(
     )
 
     # 4) Run A* from oriented start to best oriented goal (any yaw at goal position)
-    start_yaw_idx = yaw_to_idx(initial_yaw_deg)
+    start_yaw_idx = yaw_to_idx(start_yaw_deg)
     start_node: OrientedNode = (s_xy[0], s_xy[1], start_yaw_idx)
     oriented_path: list[OrientedNode] = astar_best_to_any_goal(
         OG,

@@ -37,9 +37,15 @@ logger: logging.Logger = getLogger(
 
 
 class EventSimulator:
-    def __init__(self, egg: EGG, ai2thor_controller: Controller) -> None:
+    def __init__(
+        self, egg: EGG, ai2thor_controller: Controller, crouch_height: float = 0.5
+    ) -> None:
         self.egg: EGG = egg
         self.ai2thor_controller: Controller = ai2thor_controller
+        self.crouch_height: float = crouch_height
+
+    def get_grid_size(self) -> float:
+        return self.ai2thor_controller.initialization_parameters["gridSize"]
 
     def get_picked_up_oject(self, object_name: str) -> ObjectNode:
         _, object_node = self.egg.spatial.get_object_node_by_name(object_name)
@@ -79,7 +85,7 @@ class EventSimulator:
         assert isinstance(event, Event)
         all_objects_metadata: list[dict[str, Any]] = event.metadata["objects"]
         for object_metadata in all_objects_metadata:
-            if object_metadata["name"] == object_name:
+            if object_metadata["objectId"] == object_name:
                 object_state = ObjectNode.ObjectState.from_ai2thor(
                     object_metadata=Ai2ThorObjectMetadata.model_validate(
                         object_metadata
@@ -110,32 +116,41 @@ class EventSimulator:
         self,
         object_name: str,
         horizons: list[float],
+        is_standing: list[bool],
     ) -> list[tuple[Position, Rotation, bool, float]]:
         event = self.ai2thor_controller.step(
             action="GetInteractablePoses",
             objectId=object_name,
             horizons=horizons,
-            standings=[True],
+            standings=is_standing,
         )
 
         poses: list[str, Any] = event.metadata["actionReturn"]
-        return [
+        interactable_poses: list[tuple[Position, Rotation, bool, float]] = [
             (
-                Position(x=p["x"], y=p["y"], z=p["z"]),
-                Rotation(x=0, y=p["rotation"], z=0),
-                p["standing"],
-                p["horizon"],
+                Position(x=float(p["x"]), y=float(p["y"]), z=float(p["z"])),
+                Rotation(x=0, y=float(p["rotation"]), z=0),
+                bool(p["standing"]),
+                float(p["horizon"]),
             )
             for p in poses
         ]
+        agent_position, _, _, _ = self.get_agent_state()
+        interactable_distances = [
+            p[0].euclidean(agent_position) for p in interactable_poses
+        ]
+        sorted_interactable_poses: list[tuple[Position, Rotation, bool, float]] = []
+        for j in np.argsort(interactable_distances):
+            sorted_interactable_poses.append(interactable_poses[j])
+        return sorted_interactable_poses
 
     def get_closest_interactable_poses(
-        self, object_name: str
+        self, object_name: str, is_standing: list[bool]
     ) -> tuple[Position, Rotation]:
 
         agent_position, _, agent_horizon, _ = self.get_agent_state()
         interactable_poses = self.get_interactable_poses(
-            object_name=object_name, horizons=[agent_horizon]
+            object_name=object_name, horizons=[agent_horizon], is_standing=is_standing
         )
         interactable_positions: list[Position] = [p[0] for p in interactable_poses]
         interactable_angles: list[float] = [p[1].y for p in interactable_poses]
@@ -341,7 +356,7 @@ class EventSimulator:
         nav_angle: Rotation,
         teleport: bool = False,
         standing: bool = True,
-    ) -> Event:
+    ) -> Event | None:
         if teleport:
             event = self.ai2thor_controller.step(
                 action="Teleport",
@@ -351,7 +366,18 @@ class EventSimulator:
             )
             return event
         else:
-            raise NotImplemented
+            agent_position, agent_rotation, _, _ = self.get_agent_state()
+            _, path_planning_cmds = ai2thor_nav.plan_path_and_command(
+                start_pos=agent_position,
+                start_yaw_deg=agent_rotation.y,
+                reachable_positions=self.get_reachable_positions(),
+                goal_pos=nav_position,
+                grid_size=self.get_grid_size(),
+            )
+            event = None
+            for cmd in path_planning_cmds:
+                event = self.ai2thor_controller.step(action=cmd)
+            return event
 
     def pick(self, pick_object_name: str, teleport: bool = False):
         picked_up_object_node = self.get_picked_up_oject(object_name=pick_object_name)
@@ -363,7 +389,7 @@ class EventSimulator:
         ), f"Could not get previous state of {pick_object_name}"
 
         _, _, agent_horizon, _ = self.get_agent_state()
-        
+
         parent_receptacles = picked_up_object_prev_state.parent_receptacles
         opened_parents: list[str] = []
         if parent_receptacles:
@@ -374,16 +400,18 @@ class EventSimulator:
                     opened_parents.append(parent)
         opened_parents.reverse()
 
-        # self.try_action(action_name="PickupObject", object_name=pick_object_name, teleport=teleport)
         success_pick: bool = False
-        
-        interactable_poses = self.get_interactable_poses(
-            object_name=pick_object_name, horizons=[agent_horizon]
-        )
 
+        # TODO: Analyze interactive obj height and select standing / crouching 
         for standing in [True, False]:
             if success_pick:
                 break
+            interactable_poses = self.get_interactable_poses(
+                object_name=pick_object_name,
+                horizons=[agent_horizon],
+                is_standing=[standing],
+            )
+
             for pose in interactable_poses:
                 pick_nav_position: Position = pose[0]
                 pick_nav_angle: Rotation = pose[1]
@@ -429,13 +457,16 @@ class EventSimulator:
                 openable_object_prev_state, ObjectNode.ObjectState
             ), f"Could not get previous state of {openable_object_name}"
             _, _, agent_horizon, _ = self.get_agent_state()
-            interactable_poses = self.get_interactable_poses(
-                object_name=openable_object_name, horizons=[agent_horizon]
-            )
             success_close: bool = False
+            # TODO: Analyze interactive obj height and select standing / crouching 
             for standing in [True, False]:
                 if success_close:
                     break
+                interactable_poses = self.get_interactable_poses(
+                    object_name=openable_object_name,
+                    horizons=[agent_horizon],
+                    is_standing=[standing],
+                )
                 for pose in interactable_poses:
                     close_nav_position: Position = pose[0]
                     close_nav_angle: Rotation = pose[1]
@@ -476,13 +507,16 @@ class EventSimulator:
                 openable_object_prev_state, ObjectNode.ObjectState
             ), f"Could not get previous state of {openable_object_name}"
             _, _, agent_horizon, _ = self.get_agent_state()
-            interactable_poses = self.get_interactable_poses(
-                object_name=openable_object_name, horizons=[agent_horizon]
-            )
             success_open: bool = False
+            # TODO: Analyze interactive obj height and select standing / crouching 
             for standing in [True, False]:
                 if success_open:
                     break
+                interactable_poses = self.get_interactable_poses(
+                    object_name=openable_object_name,
+                    horizons=[agent_horizon],
+                    is_standing=[standing],
+                )
                 for pose in interactable_poses:
                     open_nav_position: Position = pose[0]
                     open_nav_angle: Rotation = pose[1]
@@ -516,7 +550,11 @@ class EventSimulator:
                             f"Could not open {openable_object_name} from {open_nav_position}"
                         )
 
-    def place(self, receptacle_object_name: str, teleport: bool = False):
+    def place(
+        self,
+        receptacle_object_name: str,
+        teleport: bool = False,
+    ):
         # TODO: Add sanity check that robot is holding sth
         receptacle_object_node = self.get_receptacle_object(
             receptacle_name=receptacle_object_name
@@ -531,15 +569,18 @@ class EventSimulator:
         assert held_object_name, f"Robot not holding any object but trying to place"
 
         self.try_open(openable_object_name=receptacle_object_name, teleport=teleport)
-        # self.try_action(action_name="PutObject", object_name=receptacle_object_name, teleport=teleport)
         _, _, agent_camera_horizon, _ = self.get_agent_state()
-        interactable_poses = self.get_interactable_poses(
-            object_name=receptacle_object_name, horizons=[agent_camera_horizon]
-        )
         success_place: bool = False
+
+        # TODO: Analyze interactive obj height and select standing / crouching 
         for standing in [True, False]:
             if success_place:
                 break
+            interactable_poses = self.get_interactable_poses(
+                object_name=receptacle_object_name,
+                horizons=[agent_camera_horizon],
+                is_standing=[standing],
+            )
             for pose in interactable_poses:
                 place_nav_position: Position = pose[0]
                 place_nav_angle: Rotation = pose[1]
@@ -569,39 +610,41 @@ class EventSimulator:
                     )
         self.try_close(openable_object_name=receptacle_object_name, teleport=teleport)
 
-    def try_action(self, action_name: str, object_name: str, teleport: bool = False):
-        _, _, agent_camera_horizon, _ = self.get_agent_state()
-        interactable_poses = self.get_interactable_poses(
-            object_name=object_name, horizons=[agent_camera_horizon]
-        )
-        # TODO: Try this by analyzing the object to interact with (BBox/position)
-        for standing in [True, False]:
-            for pose in interactable_poses:
-                nav_position: Position = pose[0]
-                nav_angle: Rotation = pose[1]
-                _ = self.move_to_position(
-                    nav_position=nav_position,
-                    nav_angle=nav_angle,
-                    teleport=teleport,
-                    standing=standing,
-                )
-                event = self.ai2thor_controller.step(
-                    action=action_name,
-                    objectId=object_name,
-                    forceAction=False,
-                    placeStationary=True,
-                )
-                if event.metadata["lastActionSuccess"]:
-                    logger.info(
-                        f"Succesfully perform {action_name} on {object_name} at {nav_position}, {'standing' if standing else 'crouching'}"
-                    )
-                    self.update_agent_state(timestamp=None)
-                    self.update_visible_objects_states(timestamp=None)
-                    break
-                else:
-                    logger.warning(
-                        f"Unable to perform {action_name} on {object_name} at {nav_position}, {'standing' if standing else 'crouching'}. Retrying."
-                    )
+    #
+    # TODO: Add kwargs to params
+    # def try_action(self, action_name: str, object_name: str, teleport: bool = False):
+    #     _, _, agent_camera_horizon, _ = self.get_agent_state()
+    #     interactable_poses = self.get_interactable_poses(
+    #         object_name=object_name, horizons=[agent_camera_horizon]
+    #     )
+    #     # TODO: Try this by analyzing the object to interact with (BBox/position)
+    #     for standing in [True, False]:
+    #         for pose in interactable_poses:
+    #             nav_position: Position = pose[0]
+    #             nav_angle: Rotation = pose[1]
+    #             _ = self.move_to_position(
+    #                 nav_position=nav_position,
+    #                 nav_angle=nav_angle,
+    #                 teleport=teleport,
+    #                 standing=standing,
+    #             )
+    #             event = self.ai2thor_controller.step(
+    #                 action=action_name,
+    #                 objectId=object_name,
+    #                 forceAction=False,
+    #                 placeStationary=True,
+    #             )
+    #             if event.metadata["lastActionSuccess"]:
+    #                 logger.info(
+    #                     f"Succesfully perform {action_name} on {object_name} at {nav_position}, {'standing' if standing else 'crouching'}"
+    #                 )
+    #                 self.update_agent_state(timestamp=None)
+    #                 self.update_visible_objects_states(timestamp=None)
+    #                 break
+    #             else:
+    #                 logger.warning(
+    #                     f"Unable to perform {action_name} on {object_name} at {nav_position}, {'standing' if standing else 'crouching'}. Retrying."
+    #                 )
 
     def update_agent_state(
         self, timestamp: int | None, holding: str | None = None, agent_id: int = 0
@@ -624,18 +667,17 @@ class EventSimulator:
         )
 
     def update_object_state(self, object_name: str, timestamp: int | None):
-        object_node_id, object_node = self.egg.spatial.get_object_node_by_name(
+        object_node_id, _ = self.egg.spatial.get_object_node_by_name(
             node_name=object_name
         )
-        assert isinstance(object_node_id, int)
-        assert isinstance(object_node, ObjectNode)
-        object_state = self.get_object_state(object_name=object_name)
-        if object_state:
-            self.egg.spatial.update_object_state(
-                object_node_id=object_node_id,
-                new_object_state=object_state,
-                timestamp=timestamp,
-            )
+        if object_node_id:
+            object_state = self.get_object_state(object_name=object_name)
+            if object_state:
+                self.egg.spatial.update_object_state(
+                    object_node_id=object_node_id,
+                    new_object_state=object_state,
+                    timestamp=timestamp,
+                )
 
     def update_visible_objects_states(self, timestamp: int | None):
         for object_name in self.get_visible_objects():
@@ -654,6 +696,12 @@ class EventSimulator:
         close_receptacle_after_placing: bool = True,
     ):
         # TODO: Update EGG State after every action
-        self.pick(pick_object_name=pick_object_name, teleport=teleport)
-        self.place(receptacle_object_name=place_receptacle_name, teleport=teleport)
+        self.pick(
+            pick_object_name=pick_object_name,
+            teleport=teleport,
+        )
+        self.place(
+            receptacle_object_name=place_receptacle_name,
+            teleport=teleport,
+        )
         _ = self.ai2thor_controller.step(action="Done")

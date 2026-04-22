@@ -29,6 +29,13 @@ dependencies = [
   "pandas==2.0.0",
   "ffmpeg-python==0.2.0",
   "pydantic==2.12.5",
+  "matplotlib==3.10.0",
+  "moviepy==1.0.3",
+  "ai2thor==5.0.0",
+  "networkx==3.6.1",
+  "shapely==2.1.2",
+  "attrs==25.4.0",
+  "prior==1.0.3",
 ]
 
 [project.urls]
