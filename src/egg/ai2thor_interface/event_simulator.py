@@ -95,15 +95,10 @@ class EventSimulator:
         logger.warning(f"Could not retrieve metadata of {object_name}")
         return None
 
-    def get_object_being_held_by_agent(self) -> str | None:
+    def get_object_being_held_by_agent(self) -> list[dict[str, str]]:
         event = self.ai2thor_controller.last_event
-        assert isinstance(event, Event)
-        all_objects_metadata: list[dict[str, Any]] = event.metadata["objects"]
-        for object_metadata in all_objects_metadata:
-            if object_metadata["isPickedUp"] == True:
-                return str(object_metadata["name"])
-        logger.warning(f"Could not retrieve metadata of object being held")
-        return None
+        assert event, "Event is None"
+        return event.metadata["inventoryObjects"]
 
     def get_reachable_positions(self) -> list[Position]:
         metadata = self.ai2thor_controller.step(action="GetReachablePositions").metadata
@@ -292,63 +287,63 @@ class EventSimulator:
 
         return kept
 
-    def spawn_object_at_receptacle(
-        self,
-        object_name: str,
-        receptacle_name: str,
-        remove_occupied_spawn_coordinates: bool = True,
-        remove_points_near_inferred_boundary_convex: bool = True,
-    ) -> tuple[Position, list[Position]]:
-        object_node = self.get_picked_up_oject(object_name=object_name)
-        _, object_state = object_node.get_previous_timestamp_and_states()
-
-        spawn_coord = Position(x=0, y=0, z=0)
-        free_spawn_coordinates: list[Position] = []
-
-        if object_state:
-            action_return = None
-            while action_return is None:
-                object_aabb = object_state.bounding_box
-                object_max_dim = object_aabb.size.get_max_dim()
-
-                free_spawn_coordinates = self.get_free_spawn_coordinates_on_receptacle(
-                    receptacle_name=receptacle_name,
-                    offset=object_max_dim / 2,
-                    remove_occupied_spawn_coordinates=remove_occupied_spawn_coordinates,
-                )
-
-                if remove_points_near_inferred_boundary_convex:
-                    free_spawn_coordinates = (
-                        self.remove_points_near_inferred_boundary_convex(
-                            points=free_spawn_coordinates,
-                            d_offset=object_max_dim / 2,
-                        )
-                    )
-
-                if len(free_spawn_coordinates) == 0:
-                    break
-                spawn_coord = random.choice(free_spawn_coordinates)
-                event = self.ai2thor_controller.step(
-                    action="PlaceObjectAtPoint",
-                    objectId=object_name,
-                    position=spawn_coord.model_dump(),
-                )
-                action_return = event.metadata["actionReturn"]
-                if action_return is None:
-                    free_spawn_coordinates.remove(spawn_coord)
-                    logger.warning(
-                        f"Retrying placing {object_name} on {receptacle_name}, removing {spawn_coord}"
-                    )
-                    spawn_coord = Position(x=0, y=0, z=0)
-                    if len(free_spawn_coordinates) == 0:
-                        logger.warning(
-                            f"Could not place {object_name} on {receptacle_name}"
-                        )
-                else:
-                    logger.info(
-                        f"Succesfully placed {object_name} on {receptacle_name} at {spawn_coord}."
-                    )
-        return spawn_coord, free_spawn_coordinates
+    # def spawn_object_at_receptacle(
+    #     self,
+    #     object_name: str,
+    #     receptacle_name: str,
+    #     remove_occupied_spawn_coordinates: bool = True,
+    #     remove_points_near_inferred_boundary_convex: bool = True,
+    # ) -> tuple[Position, list[Position]]:
+    #     object_node = self.get_picked_up_oject(object_name=object_name)
+    #     _, object_state = object_node.get_previous_timestamp_and_states()
+    #
+    #     spawn_coord = Position(x=0, y=0, z=0)
+    #     free_spawn_coordinates: list[Position] = []
+    #
+    #     if object_state:
+    #         action_return = None
+    #         while action_return is None:
+    #             object_aabb = object_state.bounding_box
+    #             object_max_dim = object_aabb.size.get_max_dim()
+    #
+    #             free_spawn_coordinates = self.get_free_spawn_coordinates_on_receptacle(
+    #                 receptacle_name=receptacle_name,
+    #                 offset=object_max_dim / 2,
+    #                 remove_occupied_spawn_coordinates=remove_occupied_spawn_coordinates,
+    #             )
+    #
+    #             if remove_points_near_inferred_boundary_convex:
+    #                 free_spawn_coordinates = (
+    #                     self.remove_points_near_inferred_boundary_convex(
+    #                         points=free_spawn_coordinates,
+    #                         d_offset=object_max_dim / 2,
+    #                     )
+    #                 )
+    #
+    #             if len(free_spawn_coordinates) == 0:
+    #                 break
+    #             spawn_coord = random.choice(free_spawn_coordinates)
+    #             event = self.ai2thor_controller.step(
+    #                 action="PlaceObjectAtPoint",
+    #                 objectId=object_name,
+    #                 position=spawn_coord.model_dump(),
+    #             )
+    #             action_return = event.metadata["actionReturn"]
+    #             if action_return is None:
+    #                 free_spawn_coordinates.remove(spawn_coord)
+    #                 logger.warning(
+    #                     f"Retrying placing {object_name} on {receptacle_name}, removing {spawn_coord}"
+    #                 )
+    #                 spawn_coord = Position(x=0, y=0, z=0)
+    #                 if len(free_spawn_coordinates) == 0:
+    #                     logger.warning(
+    #                         f"Could not place {object_name} on {receptacle_name}"
+    #                     )
+    #             else:
+    #                 logger.info(
+    #                     f"Succesfully placed {object_name} on {receptacle_name} at {spawn_coord}."
+    #                 )
+    #     return spawn_coord, free_spawn_coordinates
 
     def move_to_position(
         self,
@@ -402,7 +397,7 @@ class EventSimulator:
 
         success_pick: bool = False
 
-        # TODO: Analyze interactive obj height and select standing / crouching 
+        # TODO: Analyze interactive obj height and select standing / crouching
         for standing in [True, False]:
             if success_pick:
                 break
@@ -458,7 +453,7 @@ class EventSimulator:
             ), f"Could not get previous state of {openable_object_name}"
             _, _, agent_horizon, _ = self.get_agent_state()
             success_close: bool = False
-            # TODO: Analyze interactive obj height and select standing / crouching 
+            # TODO: Analyze interactive obj height and select standing / crouching
             for standing in [True, False]:
                 if success_close:
                     break
@@ -508,7 +503,7 @@ class EventSimulator:
             ), f"Could not get previous state of {openable_object_name}"
             _, _, agent_horizon, _ = self.get_agent_state()
             success_open: bool = False
-            # TODO: Analyze interactive obj height and select standing / crouching 
+            # TODO: Analyze interactive obj height and select standing / crouching
             for standing in [True, False]:
                 if success_open:
                     break
@@ -565,14 +560,15 @@ class EventSimulator:
         assert isinstance(
             receptacle_object_prev_state, ObjectNode.ObjectState
         ), f"Could not get previous state of {receptacle_object_name}"
-        held_object_name = self.get_object_being_held_by_agent()
-        assert held_object_name, f"Robot not holding any object but trying to place"
+        held_object_info = self.get_object_being_held_by_agent()
+        assert held_object_info, f"Robot not holding any object but trying to place"
+        held_object_name = held_object_info[0]["objectId"]
 
         self.try_open(openable_object_name=receptacle_object_name, teleport=teleport)
         _, _, agent_camera_horizon, _ = self.get_agent_state()
         success_place: bool = False
 
-        # TODO: Analyze interactive obj height and select standing / crouching 
+        # TODO: Analyze interactive obj height and select standing / crouching
         for standing in [True, False]:
             if success_place:
                 break
@@ -598,7 +594,7 @@ class EventSimulator:
                 )
                 if event.metadata["lastActionSuccess"]:
                     logger.info(
-                        f"Succesfully placed object on {receptacle_object_name} at {place_nav_position}"
+                        f"Succesfully placed {held_object_name} on {receptacle_object_name} at {place_nav_position}"
                     )
                     self.update_agent_state(timestamp=None)
                     self.update_visible_objects_states(timestamp=None)
@@ -606,7 +602,7 @@ class EventSimulator:
                     break
                 else:
                     logger.warning(
-                        f"Unable to place object at {receptacle_object_name} at {place_nav_position}, retrying"
+                        f"Unable to place {held_object_name} at {receptacle_object_name} at {place_nav_position}, retrying"
                     )
         self.try_close(openable_object_name=receptacle_object_name, teleport=teleport)
 

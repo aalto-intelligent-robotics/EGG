@@ -1,5 +1,6 @@
 from datetime import datetime
 from dis import Positions
+from enum import Enum
 import sys
 import numpy as np
 from numpy.typing import NDArray
@@ -80,7 +81,6 @@ class EventNode(GraphNode):
     """
 
     agent_node_id: int
-    event_description: str = "Default description"
     start: int = Field(default=0, gt=0)
     end: int = Field(default=1, gt=0)
     timestamped_observation_odom: dict[int, Odometry] = Field(
@@ -130,6 +130,39 @@ class EventNode(GraphNode):
         :rtype: bool
         """
         return location_list is None or self.location in location_list
+
+class ActionEventNode(EventNode):
+    class ActionType(Enum):
+        MOVE = 0
+        PICK = 1
+        PLACE = 2
+        OPEN = 3
+        CLOSE = 4
+        TOGGLE = 5
+
+    action_type: ActionType
+
+    def pretty_str(self) -> str:
+        """
+        Generates a formatted string representation of the event node details.
+
+        :returns: String representing the event node.
+        :rtype: str
+        """
+        event_node_str = (
+            "\n🕛 Node info:\n"
+            + f"- Node ID: {self.node_id}\n"
+            + f"Start: {str(ns_to_datetime(self.start))}\n"
+            + f"End: {str(ns_to_datetime(self.end))}\n"
+            + f"Node type: Action-Event\n"
+            + f"Description: {self.action_type.name.lower()}\n"
+            + f"Location: {self.location}\n"
+            + f"Timestamped Observation Positions: {print_timestamped_observation_odom(self.timestamped_observation_odom)}\n"
+        )
+        return event_node_str
+
+class SummaryEventNode(EventNode):
+    event_description: str = "Default description"
 
     def pretty_str(self) -> str:
         """
@@ -223,6 +256,9 @@ class RoomNode(SpatialNode):
             floor_polygon=Polygon(corners=room_metadata.get_polygon_corners()),
         )
 
+    def is_inside_room(self, position: Position) -> bool:
+        return self.floor_polygon.is_point_inside_2d(position=position)
+
     def pretty_str(self) -> str:
         """
         Generates a formatted, human-readable string for a RoomNode.
@@ -263,34 +299,33 @@ class ObjectNode(SpatialNode):
         )
 
         is_pickupable: bool = Field(default=False, frozen=True)
-        is_moveable: bool = Field(default=False, frozen=True)
+        # is_moveable: bool = Field(default=False, frozen=True)
         is_toggleable: bool = Field(default=False, frozen=True)
-        is_breakable: bool = Field(default=False, frozen=True)
+        # is_breakable: bool = Field(default=False, frozen=True)
         can_fill_with_liquid: bool = Field(default=False, frozen=True)
         is_dirtyable: bool = Field(default=False, frozen=True)
         can_be_used_up: bool = Field(default=False, frozen=True)
-        is_cookable: bool = Field(default=False, frozen=True)
+        # is_cookable: bool = Field(default=False, frozen=True)
         is_heat_source: bool = Field(default=False, frozen=True)
         is_cold_source: bool = Field(default=False, frozen=True)
-        is_sliceable: bool = Field(default=False, frozen=True)
+        # is_sliceable: bool = Field(default=False, frozen=True)
         is_openable: bool = Field(default=False, frozen=True)
         is_receptacle: bool = Field(default=False, frozen=True)
 
         @classmethod
-        @classmethod
         def from_ai2thor(cls, object_metadata: Ai2ThorObjectMetadata) -> Self:
             return cls(
                 is_pickupable=object_metadata.pickupable,
-                is_moveable=object_metadata.moveable,
+                # is_moveable=object_metadata.moveable,
                 is_toggleable=object_metadata.toggleable,
-                is_breakable=object_metadata.breakable,
+                # is_breakable=object_metadata.breakable,
                 can_fill_with_liquid=object_metadata.canFillWithLiquid,
                 is_dirtyable=object_metadata.dirtyable,
                 can_be_used_up=object_metadata.canBeUsedUp,
-                is_cookable=object_metadata.cookable,
+                # is_cookable=object_metadata.cookable,
                 is_heat_source=object_metadata.isHeatSource,
                 is_cold_source=object_metadata.isColdSource,
-                is_sliceable=object_metadata.sliceable,
+                # is_sliceable=object_metadata.sliceable,
                 is_openable=object_metadata.openable,
                 is_receptacle=object_metadata.receptacle,
             )
@@ -378,16 +413,16 @@ class ObjectNode(SpatialNode):
     def capabilities_str(self) -> str:
         capabilities = {
             "pickupable": self.capabilities.is_pickupable,
-            "moveable": self.capabilities.is_moveable,
+            # "moveable": self.capabilities.is_moveable,
             "toggleable": self.capabilities.is_toggleable,
-            "breakable": self.capabilities.is_breakable,
+            # "breakable": self.capabilities.is_breakable,
             "can_fill_with_liquid": self.capabilities.can_fill_with_liquid,
             "dirtyable": self.capabilities.is_dirtyable,
             "can_be_used_up": self.capabilities.can_be_used_up,
-            "cookable": self.capabilities.is_cookable,
+            # "cookable": self.capabilities.is_cookable,
             "is_heat_source": self.capabilities.is_heat_source,
             "is_cold_source": self.capabilities.is_cold_source,
-            "sliceable": self.capabilities.is_sliceable,
+            # "sliceable": self.capabilities.is_sliceable,
             "openable": self.capabilities.is_openable,
             "is_receptacle": self.capabilities.is_receptacle,
         }

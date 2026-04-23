@@ -1,8 +1,10 @@
 import numpy as np
-from typing import Literal, Self
+from typing import Literal, Self, TypeAlias
 from numpy.typing import NDArray, ArrayLike
 from pydantic import BaseModel, Field, ConfigDict
 from typing_extensions import ClassVar, override
+
+Axis: TypeAlias = Literal["x", "y", "z"]
 
 
 class CoordXYZ(BaseModel):
@@ -26,9 +28,7 @@ class CoordXYZ(BaseModel):
         self.y = round(self.y, ndigits)
         self.z = round(self.z, ndigits)
 
-    def as_numpy_2d(
-        self, omitted_axis: Literal["x", "y", "z"] = "y"
-    ) -> NDArray[np.float32]:
+    def as_numpy_2d(self, omitted_axis: Axis = "y") -> NDArray[np.float32]:
         if omitted_axis == "x":
             return np.array([self.y, self.z])
         elif omitted_axis == "y":
@@ -61,7 +61,7 @@ class Position(CoordXYZ):
     def euclidean2d(
         self,
         other: "Position",
-        omitted_axis: Literal["x", "y", "z"] = "y",
+        omitted_axis: Axis = "y",
     ) -> float:
         d = self.as_numpy_2d(omitted_axis=omitted_axis) - other.as_numpy_2d(
             omitted_axis
@@ -95,6 +95,59 @@ class Polygon(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid")
 
     corners: list[Position] = Field(default_factory=list, min_length=3)
+
+    def is_point_inside_2d(self, position: Position, omit_axis: Axis = "y") -> bool:
+        """
+        Check if a 3D point lies inside the polygon when projected to 2D by omitting one axis.
+        - omit_axis="y" projects to the XZ-plane (use x and z).
+        - Points on the boundary are considered inside.
+        """
+        n = len(self.corners)
+
+        # Project polygon vertices and the query point
+        pts = [c.as_numpy_2d(omitted_axis=omit_axis) for c in self.corners]
+        px, py = position.as_numpy_2d().tolist()
+
+        # Epsilon for numeric stability
+        eps = 1e-12
+
+        # Helper: check if point is on segment (a,b) in 2D
+        def point_on_segment(
+            ax: float, ay: float, bx: float, by: float, x: float, y: float
+        ) -> bool:
+            # Vector cross product should be ~0 for colinearity
+            cross = (bx - ax) * (y - ay) - (by - ay) * (x - ax)
+            if abs(cross) > eps:
+                return False
+            # Check within bounding box with a tolerance
+            dotprod = (x - ax) * (x - bx) + (y - ay) * (y - by)
+            return dotprod <= eps  # <= 0 with tolerance
+
+        # Boundary check: point on any edge -> inside
+        for i in range(n):
+            x1, y1 = pts[i]
+            x2, y2 = pts[(i + 1) % n]
+            if point_on_segment(x1, y1, x2, y2, px, py):
+                return True
+
+        # Ray casting: count how many times a horizontal ray to +inf in u-direction intersects edges
+        inside = False
+        for i in range(n):
+            x1, y1 = pts[i]
+            x2, y2 = pts[(i + 1) % n]
+
+            # Determine if the edge crosses the horizontal line at py
+            # Standard test to avoid double counting at vertices
+            intersects = (y1 > py) != (y2 > py)
+            if intersects:
+                # Compute x coordinate of the intersection of the edge with the horizontal line y=py
+                # Avoid division by zero: we know y1 != y2 here because of the test above
+                x_intersect = x1 + (x2 - x1) * (py - y1) / (y2 - y1)
+                # If the intersection is to the right of the point, toggle inside
+                if x_intersect >= px - eps:
+                    inside = not inside
+
+        return inside
 
 
 class AxisAlignedBoundingBox(BaseModel):
@@ -145,7 +198,7 @@ class AxisAlignedBoundingBox(BaseModel):
     def contains_2d(
         self,
         pos: Position,
-        omitted_axis: Literal["x", "y", "z"] = "y",
+        omitted_axis: Axis = "y",
         offset: float = 0.0,
     ) -> bool:
         """

@@ -1,7 +1,5 @@
 # pyright: reportExplicitAny=none, reportAny=none
-from copy import deepcopy
-from datetime import datetime
-import tomllib
+from copy import deepcopy from datetime import datetime import tomllib
 import logging
 from typing import Self, Any, ClassVar
 from pydantic import BaseModel, Field, JsonValue, TypeAdapter, ConfigDict
@@ -84,7 +82,7 @@ class EGG(BaseModel):
         cls,
         ai2thor_agent_metadata: dict[str, JsonValue],
         ai2thor_object_metadata: list[dict[str, JsonValue]],
-        ai2thor_house_metadata: dict[str, JsonValue],
+        ai2thor_house_metadata: dict[str, JsonValue] | str,
         object_types_config_file: str | None = None,
     ) -> Self:
 
@@ -113,9 +111,13 @@ class EGG(BaseModel):
 
         egg.spatial.add_agent(new_agent_node=agent_node)
 
-        rooms_metadata: list[dict[str, JsonValue]] = list_adapter.validate_python(
-            ai2thor_house_metadata["rooms"]
-        )
+        if isinstance(ai2thor_house_metadata, str):
+            # TODO: Implement iTHOR
+            raise NotImplementedError
+        else:
+            rooms_metadata: list[dict[str, JsonValue]] = list_adapter.validate_python(
+                ai2thor_house_metadata["rooms"]
+            )
         object_metadata: list[dict[str, JsonValue]] = list_adapter.validate_python(
             ai2thor_object_metadata
         )
