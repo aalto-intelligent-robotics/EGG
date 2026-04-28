@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import Annotated, ClassVar, Literal
 from typing_extensions import Self
 
+from egg.ai2thor_interface.actions import ActionType
 from egg.utils.data import (
     Ai2ThorAgentMetadata,
     Ai2ThorObjectMetadata,
@@ -132,13 +133,6 @@ class EventNode(GraphNode):
         return location_list is None or self.location in location_list
 
 class ActionEventNode(EventNode):
-    class ActionType(Enum):
-        MOVE = 0
-        PICK = 1
-        PLACE = 2
-        OPEN = 3
-        CLOSE = 4
-        TOGGLE = 5
 
     action_type: ActionType
 

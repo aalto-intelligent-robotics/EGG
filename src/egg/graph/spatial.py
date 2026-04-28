@@ -7,6 +7,7 @@ from copy import deepcopy
 from pydantic import BaseModel, Field, ConfigDict
 from typing_extensions import Any
 
+from egg.graph.edge import SpatialEdge
 from egg.graph.node import AgentNode, ObjectNode, RoomNode
 from egg.utils.data import Ai2ThorTemperature
 from egg.utils.geometry import AxisAlignedBoundingBox, Position
@@ -32,6 +33,7 @@ class SpatialComponents(BaseModel):
     )
 
     agent_nodes: dict[int, AgentNode] = Field(default_factory=dict)
+    spatial_edges: dict[str, SpatialEdge] = Field(default_factory=dict)
     room_nodes: dict[int, RoomNode] = Field(default_factory=dict)
     object_nodes: dict[int, ObjectNode] = Field(default_factory=dict)
     map_views: dict[int, NDArray[np.uint8]] = Field(default_factory=dict)
@@ -78,6 +80,15 @@ class SpatialComponents(BaseModel):
         :type new_room_node: RoomNode
         """
         self.room_nodes.update({new_room_node.node_id: new_room_node})
+
+    def add_spatial_edge(self, new_spatial_edge: SpatialEdge):
+        assert (
+            new_spatial_edge.source_node_id in self.object_nodes.keys()
+        ), f"Invalid source node ID: {new_spatial_edge.source_node_id} is not a spatial node"
+        assert (
+            new_spatial_edge.target_node_id in self.object_nodes.keys()
+        ), f"Invalid target node ID: {new_spatial_edge.target_node_id} is not a spatial node"
+        self.spatial_edges.update({new_spatial_edge.edge_id: new_spatial_edge})
 
     def remove_room_node(self, room_node_id: int):
         """
@@ -410,4 +421,7 @@ class SpatialComponents(BaseModel):
             spatial_str += room_node.pretty_str()
         for agent_node in self.agent_nodes.values():
             spatial_str += agent_node.pretty_str()
+        spatial_str += "\n🔗🔗🔗 SPATIAL EDGES 🔗🔗🔗\n"
+        for spatial_edge in self.spatial_edges.values():
+            spatial_str += spatial_edge.pretty_str()
         return spatial_str

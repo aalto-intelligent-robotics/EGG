@@ -20,7 +20,7 @@ class GraphEdge(BaseModel):
     the source and target nodes.
 
     :param edge_id: Unique identifier for the edge.
-    :type edge_id: int
+    :type edge_id: str
     :param source_node_id: Node identifier where the edge originates.
     :type source_node_id: int
     :param target_node_id: Node identifier where the edge points to.
@@ -30,7 +30,7 @@ class GraphEdge(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(
         arbitrary_types_allowed=True, validate_assignment=True
     )
-    edge_id: int
+    edge_id: str
     source_node_id: Annotated[int, Field(ge=0)]
     target_node_id: Annotated[int, Field(ge=0)]
 
@@ -72,9 +72,9 @@ class SpatialEdge(GraphEdge):
     :type object_role: str
     """
 
-    class SpatialRelationship(Enum):
-        PARENT = 0
+    class SpatialRelationship(str, Enum):
         # TODO: Implement different types of relationships (on, inside, support)
+        PARENT = "PARENT"
 
     relationship: SpatialRelationship
 

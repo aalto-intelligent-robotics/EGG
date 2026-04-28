@@ -1,12 +1,13 @@
 # pyright: reportExplicitAny=none, reportAny=none
-from copy import deepcopy 
-from datetime import datetime 
+from copy import deepcopy
+from datetime import datetime
 import tomllib
 import logging
 from typing import Self, Any, ClassVar
 from pydantic import BaseModel, Field, JsonValue, TypeAdapter, ConfigDict
 from typing_extensions import override
 
+from egg.graph.edge import SpatialEdge
 from egg.graph.event import EventComponents
 from egg.graph.node import AgentNode, ObjectNode, RoomNode
 from egg.graph.spatial import SpatialComponents
@@ -140,6 +141,27 @@ class EGG(BaseModel):
             )
             egg.spatial.add_object_node(new_object_node=obj_node)
             node_id_gen += 1
+
+        receptacle_nodes = egg.spatial.get_object_by_capabilities(
+            capabilities=["is_receptacle"]
+        )
+        for rn in receptacle_nodes.values():
+            _, rn_previous_state = rn.get_previous_timestamp_and_states()
+            assert rn_previous_state, f"Cannot get previous state of {rn.name}"
+            children_names = rn_previous_state.receptacle_object_ids
+            if children_names:
+                for child_name in children_names:
+                    _, child_node = egg.spatial.get_object_node_by_name(
+                        node_name=child_name
+                    )
+                    assert isinstance(child_node, ObjectNode)
+                    edge = SpatialEdge(
+                        edge_id=f"{rn.name}-{child_node.name}",
+                        source_node_id=rn.node_id,
+                        target_node_id=child_node.node_id,
+                        relationship=SpatialEdge.SpatialRelationship.PARENT,
+                    )
+                    egg.spatial.add_spatial_edge(new_spatial_edge=edge)
 
         egg.node_id_gen = node_id_gen
         return egg
