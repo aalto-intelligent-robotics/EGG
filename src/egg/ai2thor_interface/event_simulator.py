@@ -41,30 +41,29 @@ class EventSimulator:
     def is_sim_event_successful(self) -> bool:
         return self.get_sim_previous_event().metadata["lastActionSuccess"]
 
-    def get_grid_size(self) -> float:
+    def get_sim_grid_size(self) -> float:
         return self.ai2thor_controller.initialization_parameters["gridSize"]
 
-    def get_picked_up_egg_object_node(self, object_name: str) -> ObjectNode:
-        _, object_node = self.egg.spatial.get_object_node_by_name(object_name)
-        assert isinstance(
-            object_node, ObjectNode
-        ), f"{object_node} does not exist in EGG"
-        assert (
-            object_node.capabilities.is_pickupable
-        ), f"Trying pick and place but {object_node} is not pickupable."
-        return object_node
+    def get_sim_objects(self) -> list[dict[str, Any]]:
+        return self.get_sim_object_metadata()
 
-    def get_receptacle_egg_object_node(self, receptacle_name: str) -> ObjectNode:
-        _, receptacle_object_node = self.egg.spatial.get_object_node_by_name(
-            receptacle_name
-        )
-        assert isinstance(
-            receptacle_object_node, ObjectNode
-        ), f"{receptacle_object_node} does not exist in EGG"
-        assert (
-            receptacle_object_node.capabilities.is_receptacle
-        ), f"{receptacle_name} is not a receptacle."
-        return receptacle_object_node
+    def get_sim_spawnable_positions_at_receptacle(
+        self, receptacle_name: str
+    ) -> list[Position]:
+        spawnable_positions = self.ai2thor_controller.step(
+            action="GetSpawnCoordinatesAboveReceptacle",
+            objectId=receptacle_name,
+            anywhere=False,
+        ).metadata["actionReturn"]
+        return [Position.model_validate(p) for p in spawnable_positions]
+
+    def get_sim_visible_objects(self) -> list[str]:
+        last_event = self.get_sim_previous_event()
+        instance_detections2D = last_event.instance_detections2D
+        if instance_detections2D:
+            return list(instance_detections2D.keys())
+        else:
+            return []
 
     def get_sim_agent_state(self) -> tuple[Position, Rotation, float, bool]:
         event = self.get_sim_previous_event()
@@ -76,39 +75,41 @@ class EventSimulator:
             bool(agent_metadata["isStanding"]),
         )
 
-    def get_sim_object_state(self, object_name: str) -> ObjectNode.ObjectState | None:
-        object_metadata = self.get_sim_object_metadata(object_name=object_name)
-        return ObjectNode.ObjectState.from_ai2thor(object_metadata)
-
     def get_sim_object_metadata(self, object_name: str) -> Ai2ThorObjectMetadata | None:
         event = self.get_sim_previous_event()
         all_objects_metadata: list[dict[str, Any]] = event.metadata["objects"]
         for metadata in all_objects_metadata:
             if metadata["objectId"] == object_name:
                 obj_metadata = Ai2ThorObjectMetadata.model_validate(metadata)
-                assert obj_metadata, f"Could not retrieve metadata of {object_name}"
                 return obj_metadata
         logger.warning(f"Could not retrieve metadata of {object_name}")
         return None
 
-    def get_object_capabilities_from_metadata(
+    def get_object_state_from_sim_metadata(
+        self, object_name: str
+    ) -> ObjectNode.ObjectState | None:
+        object_metadata = self.get_sim_object_metadata(object_name=object_name)
+        assert object_metadata, f"Could not retrieve metadata of {object_name}"
+        return ObjectNode.ObjectState.from_ai2thor(object_metadata)
+
+    def get_object_capabilities_from_sim_metadata(
         self, object_name: str
     ) -> ObjectNode.ObjectCapabilities | None:
         object_metadata = self.get_sim_object_metadata(object_name=object_name)
         assert object_metadata, f"Could not retrieve metadata of {object_name}"
         return ObjectNode.ObjectCapabilities.from_ai2thor(object_metadata)
 
-    def get_object_being_held_by_agent(self) -> list[dict[str, str]]:
+    def get_sim_object_being_held_by_agent(self) -> list[dict[str, str]]:
         return self.get_sim_previous_event().metadata["inventoryObjects"]
 
-    def get_reachable_positions(self) -> list[Position]:
+    def get_sim_reachable_positions(self) -> list[Position]:
         metadata = self.ai2thor_controller.step(action="GetReachablePositions").metadata
         reachable_positions: list[Position] = []
         for pos in metadata["actionReturn"]:
             reachable_positions.append(Position.model_validate(pos))
         return reachable_positions
 
-    def get_interactable_poses(
+    def get_sim_interactable_poses(
         self,
         object_name: str,
         horizons: list[float],
@@ -140,12 +141,12 @@ class EventSimulator:
             sorted_interactable_poses.append(interactable_poses[j])
         return sorted_interactable_poses
 
-    def get_closest_interactable_poses(
+    def get_closest_sim_interactable_poses(
         self, object_name: str, is_standing: list[bool]
     ) -> tuple[Position, Rotation]:
 
         agent_position, _, agent_horizon, _ = self.get_sim_agent_state()
-        interactable_poses = self.get_interactable_poses(
+        interactable_poses = self.get_sim_interactable_poses(
             object_name=object_name, horizons=[agent_horizon], is_standing=is_standing
         )
         interactable_positions: list[Position] = [p[0] for p in interactable_poses]
@@ -164,6 +165,28 @@ class EventSimulator:
         desired_yaw_deg = interactable_angles[best_idx]
 
         return interactable_positions[best_idx], Rotation(x=0, y=desired_yaw_deg, z=0)
+
+    def get_picked_up_egg_object_node(self, object_name: str) -> ObjectNode:
+        _, object_node = self.egg.spatial.get_object_node_by_name(object_name)
+        assert isinstance(
+            object_node, ObjectNode
+        ), f"{object_node} does not exist in EGG"
+        assert (
+            object_node.capabilities.is_pickupable
+        ), f"Trying pick and place but {object_node} is not pickupable."
+        return object_node
+
+    def get_receptacle_egg_object_node(self, receptacle_name: str) -> ObjectNode:
+        _, receptacle_object_node = self.egg.spatial.get_object_node_by_name(
+            receptacle_name
+        )
+        assert isinstance(
+            receptacle_object_node, ObjectNode
+        ), f"{receptacle_object_node} does not exist in EGG"
+        assert (
+            receptacle_object_node.capabilities.is_receptacle
+        ), f"{receptacle_name} is not a receptacle."
+        return receptacle_object_node
 
     def move_to_position(
         self,
@@ -185,9 +208,9 @@ class EventSimulator:
             _, path_planning_cmds = ai2thor_nav.plan_path_and_command(
                 start_pos=agent_position,
                 start_yaw_deg=agent_rotation.y,
-                reachable_positions=self.get_reachable_positions(),
+                reachable_positions=self.get_sim_reachable_positions(),
                 goal_pos=nav_position,
-                grid_size=self.get_grid_size(),
+                grid_size=self.get_sim_grid_size(),
             )
             for cmd in path_planning_cmds:
                 _ = self.ai2thor_controller.step(action=cmd)
@@ -198,7 +221,12 @@ class EventSimulator:
             _ = self.ai2thor_controller.step(action="Done")
             return True
 
-    def execute_pick(self, pick_object_name: str, timestamp: int | None = None, teleport: bool = False) -> bool:
+    def execute_pick(
+        self,
+        pick_object_name: str,
+        timestamp: int | None = None,
+        teleport: bool = False,
+    ) -> bool:
         _, _, agent_horizon, _ = self.get_sim_agent_state()
 
         success_pick: bool = False
@@ -207,7 +235,7 @@ class EventSimulator:
         for standing in [True, False]:
             if success_pick:
                 break
-            interactable_poses = self.get_interactable_poses(
+            interactable_poses = self.get_sim_interactable_poses(
                 object_name=pick_object_name,
                 horizons=[agent_horizon],
                 is_standing=[standing],
@@ -230,22 +258,30 @@ class EventSimulator:
                 )
                 if self.is_sim_event_successful():
                     logger.info(
-                        f"Successfully picked up {pick_object_name} at {pick_nav_position}"
+                        f"Successfully picked up {pick_object_name} at {pick_nav_position}, {'standing' if standing else 'crouching'}"
                     )
-                    self.update_agent_state(timestamp=timestamp, holding=pick_object_name)
-                    self.update_visible_objects_states(timestamp=timestamp)
-                    _ = self.ai2thor_controller.step(action="Done")
                     success_pick = True
                     break
                 else:
                     logger.warning(
-                        f"Unable to pick up {pick_object_name} at {pick_nav_position}"
+                        f"Unable to pick up {pick_object_name} at {pick_nav_position}, {'standing' if standing else 'crouching'}"
                     )
-        if not success_pick:
+        if success_pick:
+            self.update_agent_state(
+                timestamp=timestamp, holding=pick_object_name
+            )
+            self.update_visible_objects_states(timestamp=timestamp)
+            _ = self.ai2thor_controller.step(action="Done")
+        else:
             logger.warning(f"Unable to pick up {pick_object_name} after all attempts!")
         return success_pick
 
-    def execute_close(self, openable_object_name: str, timestamp: int | None = None, teleport: bool = False) -> bool:
+    def execute_close(
+        self,
+        openable_object_name: str,
+        timestamp: int | None = None,
+        teleport: bool = False,
+    ) -> bool:
         _, openable_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=openable_object_name
         )
@@ -259,7 +295,7 @@ class EventSimulator:
             for standing in [True, False]:
                 if success_close:
                     break
-                interactable_poses = self.get_interactable_poses(
+                interactable_poses = self.get_sim_interactable_poses(
                     object_name=openable_object_name,
                     horizons=[agent_horizon],
                     is_standing=[standing],
@@ -279,24 +315,30 @@ class EventSimulator:
                         forceAction=False,
                     )
                     if self.is_sim_event_successful():
-                        logger.info(f"Successfully closed {openable_object_name}")
-                        self.update_agent_state(timestamp=timestamp)
-                        self.update_visible_objects_states(timestamp=timestamp)
+                        logger.info(
+                            f"Successfully closed {openable_object_name} at {close_nav_position}, {'standing' if standing else 'crouching'}"
+                        )
                         success_close = True
-                        _ = self.ai2thor_controller.step(action="Done")
                         break
                     else:
                         logger.warning(
-                            f"Could not close {openable_object_name} from {close_nav_position}"
+                            f"Could not close {openable_object_name} from {close_nav_position}, {'standing' if standing else 'crouching'}"
                         )
-        if not success_close:
+        if success_close:
+            self.update_agent_state(timestamp=timestamp)
+            self.update_visible_objects_states(timestamp=timestamp)
+            _ = self.ai2thor_controller.step(action="Done")
+        else:
             logger.warning(
                 f"Unable to close {openable_object_name} after all attempts!"
             )
         return success_close
 
     def execute_toggle_on(
-        self, toggleable_object_name: str, timestamp: int | None = None, teleport: bool = False
+        self,
+        toggleable_object_name: str,
+        timestamp: int | None = None,
+        teleport: bool = False,
     ) -> bool:
         _, toggleable_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=toggleable_object_name
@@ -311,7 +353,7 @@ class EventSimulator:
             for standing in [True, False]:
                 if success_toggle_on:
                     break
-                interactable_poses = self.get_interactable_poses(
+                interactable_poses = self.get_sim_interactable_poses(
                     object_name=toggleable_object_name,
                     horizons=[agent_horizon],
                     is_standing=[standing],
@@ -331,24 +373,30 @@ class EventSimulator:
                         forceAction=False,
                     )
                     if self.is_sim_event_successful():
-                        logger.info(f"Successfully toggled on {toggleable_object_name}")
-                        self.update_agent_state(timestamp=timestamp)
-                        self.update_visible_objects_states(timestamp=timestamp)
+                        logger.info(
+                            f"Successfully toggled on {toggleable_object_name} at {toggle_nav_position}, {'standing' if standing else 'crouching'}"
+                        )
                         success_toggle_on = True
-                        _ = self.ai2thor_controller.step(action="Done")
                         break
                     else:
                         logger.warning(
-                            f"Could not toggle on {toggleable_object_name} from {toggle_nav_position}"
+                            f"Could not toggle on {toggleable_object_name} from {toggle_nav_position}, {'standing' if standing else 'crouching'}"
                         )
-        if not success_toggle_on:
+        if success_toggle_on:
+            self.update_agent_state(timestamp=timestamp)
+            self.update_visible_objects_states(timestamp=timestamp)
+            _ = self.ai2thor_controller.step(action="Done")
+        else:
             logger.warning(
                 f"Unable to toggle on {toggleable_object_name} after all attempts!"
             )
         return success_toggle_on
 
     def execute_toggle_off(
-        self, toggleable_object_name: str, timestamp: int | None = None, teleport: bool = False
+        self,
+        toggleable_object_name: str,
+        timestamp: int | None = None,
+        teleport: bool = False,
     ) -> bool:
         _, toggleable_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=toggleable_object_name
@@ -363,7 +411,7 @@ class EventSimulator:
             for standing in [True, False]:
                 if success_toggle_off:
                     break
-                interactable_poses = self.get_interactable_poses(
+                interactable_poses = self.get_sim_interactable_poses(
                     object_name=toggleable_object_name,
                     horizons=[agent_horizon],
                     is_standing=[standing],
@@ -384,24 +432,30 @@ class EventSimulator:
                     )
                     if self.is_sim_event_successful():
                         logger.info(
-                            f"Successfully toggled off {toggleable_object_name}"
+                            f"Successfully toggled off {toggleable_object_name} at {toggle_nav_position}, {'standing' if standing else 'crouching'}"
                         )
-                        self.update_agent_state(timestamp=timestamp)
-                        self.update_visible_objects_states(timestamp=timestamp)
                         success_toggle_off = True
-                        _ = self.ai2thor_controller.step(action="Done")
                         break
                     else:
                         logger.warning(
-                            f"Could not toggle off {toggleable_object_name} from {toggle_nav_position}"
+                            f"Could not toggle off {toggleable_object_name} from {toggle_nav_position}, {'standing' if standing else 'crouching'}"
                         )
-        if not success_toggle_off:
+        if success_toggle_off:
+            self.update_agent_state(timestamp=timestamp)
+            self.update_visible_objects_states(timestamp=timestamp)
+            _ = self.ai2thor_controller.step(action="Done")
+        else:
             logger.warning(
                 f"Unable to toggle off {toggleable_object_name} after all attempts!"
             )
         return success_toggle_off
 
-    def execute_open(self, openable_object_name: str, timestamp: int | None = None, teleport: bool = False) -> bool:
+    def execute_open(
+        self,
+        openable_object_name: str,
+        timestamp: int | None = None,
+        teleport: bool = False,
+    ) -> bool:
         _, openable_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=openable_object_name
         )
@@ -415,7 +469,7 @@ class EventSimulator:
             for standing in [True, False]:
                 if success_open:
                     break
-                interactable_poses = self.get_interactable_poses(
+                interactable_poses = self.get_sim_interactable_poses(
                     object_name=openable_object_name,
                     horizons=[agent_horizon],
                     is_standing=[standing],
@@ -435,7 +489,7 @@ class EventSimulator:
                         openness=1,
                         forceAction=False,
                     )
-                    openable_object_state = self.get_sim_object_state(
+                    openable_object_state = self.get_object_state_from_sim_metadata(
                         object_name=openable_object_name
                     )
                     assert isinstance(openable_object_state, ObjectNode.ObjectState)
@@ -443,41 +497,47 @@ class EventSimulator:
                         openable_object_state.openness == 1.0
                         and openable_object_state.is_open
                     ):
-                        logger.info(f"Successfully opened {openable_object_name}")
-                        self.update_agent_state(timestamp=timestamp)
-                        self.update_visible_objects_states(timestamp=timestamp)
+                        logger.info(
+                            f"Successfully opened {openable_object_name} from {open_nav_position}, {'standing' if standing else 'crouching'}"
+                        )
                         success_open = True
-                        _ = self.ai2thor_controller.step(action="Done")
                         break
                     else:
                         logger.warning(
-                            f"Could not open {openable_object_name} from {open_nav_position}"
+                            f"Could not open {openable_object_name} from {open_nav_position}, {'standing' if standing else 'crouching'}"
                         )
+        if success_open:
+            self.update_agent_state(timestamp=timestamp)
+            self.update_visible_objects_states(timestamp=timestamp)
+            _ = self.ai2thor_controller.step(action="Done")
+        else:
+            logger.warning(
+                f"Unable to open {openable_object_name} after all attempts!"
+            )
         return success_open
 
     def execute_place(
         self,
-        receptacle_object_name: str,
         held_object: str,
+        receptacle_object_name: str,
         timestamp: int | None = None,
         teleport: bool = False,
     ) -> bool:
         success_place: bool = False
-        held_object_info = self.get_object_being_held_by_agent()
+        held_object_info = self.get_sim_object_being_held_by_agent()
         if not held_object_info:
             logger.warning(f"Robot not holding any object but trying to place")
             return False
         held_object_name = held_object_info[0]["objectId"]
         assert held_object_name == held_object
 
-        # self.try_open(openable_object_name=receptacle_object_name, teleport=teleport)
         _, _, agent_camera_horizon, _ = self.get_sim_agent_state()
 
         # TODO: Analyze interactive obj height and select standing / crouching
         for standing in [True, False]:
             if success_place:
                 break
-            interactable_poses = self.get_interactable_poses(
+            interactable_poses = self.get_sim_interactable_poses(
                 object_name=receptacle_object_name,
                 horizons=[agent_camera_horizon],
                 is_standing=[standing],
@@ -499,22 +559,54 @@ class EventSimulator:
                 )
                 if self.is_sim_event_successful():
                     logger.info(
-                        f"Succesfully placed {held_object_name} on {receptacle_object_name} at {place_nav_position}"
+                        f"Succesfully placed {held_object_name} on {receptacle_object_name} at {place_nav_position}, {'standing' if standing else 'crouching'}."
                     )
-                    self.update_agent_state(timestamp=timestamp)
-                    self.update_visible_objects_states(timestamp=timestamp)
                     success_place = True
-                    _ = self.ai2thor_controller.step(action="Done")
                     break
                 else:
                     logger.warning(
-                        f"Unable to place {held_object_name} at {receptacle_object_name} at {place_nav_position}, retrying"
+                        f"Unable to place {held_object_name} at {receptacle_object_name} at {place_nav_position}, {'standing' if standing else 'crouching'}, retrying with spawning"
                     )
-        if not success_place:
+                    success_place = self.execute_spawn_on_receptacle(
+                        object_name=held_object_name,
+                        receptacle_name=receptacle_object_name,
+                    )
+                    if success_place:
+                        break
+        if success_place:
+            self.update_agent_state(timestamp=timestamp)
+            self.update_visible_objects_states(timestamp=timestamp)
+            _ = self.ai2thor_controller.step(action="Done")
+        else:
             logger.warning(
-                f"Unable to place {held_object_name} at {receptacle_object_name} after all attempts"
+                f"Unable to place {held_object_name} at {receptacle_object_name} after all attempts."
             )
         return success_place
+
+    def execute_spawn(self, object_name: str, position: Position) -> bool:
+        _ = self.ai2thor_controller.step(
+            action="PlaceObjectAtPoint",
+            objectId=object_name,
+            position=position.model_dump(),
+        )
+        return self.is_sim_event_successful()
+
+    def execute_spawn_on_receptacle(
+        self,
+        object_name: str,
+        receptacle_name: str,
+    ) -> bool:
+        spawnable_positions = self.get_sim_spawnable_positions_at_receptacle(
+            receptacle_name=receptacle_name
+        )
+        for position in spawnable_positions:
+            spawn_success = self.execute_spawn(
+                object_name=object_name, position=position
+            )
+            if spawn_success:
+                return True
+        logger.warning(f"Unable to spawn {object_name} at {receptacle_name}.")
+        return False
 
     def update_agent_state(
         self, timestamp: int | None, holding: str | None = None, agent_id: int = 0
@@ -543,7 +635,9 @@ class EventSimulator:
             node_name=object_name
         )
         if object_node_id:
-            object_state = self.get_sim_object_state(object_name=object_name)
+            object_state = self.get_object_state_from_sim_metadata(
+                object_name=object_name
+            )
             if object_state:
                 self.egg.spatial.update_object_state(
                     object_node_id=object_node_id,
@@ -551,11 +645,11 @@ class EventSimulator:
                     timestamp=timestamp,
                 )
         elif "room" not in object_name.lower():
-            capabilities = self.get_object_capabilities_from_metadata(
+            capabilities = self.get_object_capabilities_from_sim_metadata(
                 object_name=object_name
             )
             assert capabilities
-            state = self.get_sim_object_state(object_name=object_name)
+            state = self.get_object_state_from_sim_metadata(object_name=object_name)
             assert state
             new_node_id = self.egg.gen_id()
             object_metadata = self.get_sim_object_metadata(object_name=object_name)
@@ -571,19 +665,11 @@ class EventSimulator:
             self.egg.spatial.add_object_node(new_object_node=object_node)
 
     def update_visible_objects_states(self, timestamp: int | None):
-        for object_name in self.get_visible_objects():
+        for object_name in self.get_sim_visible_objects():
             self.update_object_state(object_name=object_name, timestamp=timestamp)
 
-    def get_visible_objects(self) -> list[str]:
-        last_event = self.get_sim_previous_event()
-        instance_detections2D = last_event.instance_detections2D
-        if instance_detections2D:
-            return list(instance_detections2D.keys())
-        else:
-            return []
-
     def move_to_object(self, object_name: str, teleport: bool) -> bool:
-        interactable_pose = self.get_interactable_poses(
+        interactable_pose = self.get_sim_interactable_poses(
             object_name=object_name,
             horizons=[30],
             is_standing=[True],
@@ -618,7 +704,9 @@ class EventSimulator:
                 openable_object_name=object_name, teleport=teleport
             )
         elif action_type == ActionType.CLOSE.lower():
-            return self.execute_close(openable_object_name=object_name, teleport=teleport)
+            return self.execute_close(
+                openable_object_name=object_name, teleport=teleport
+            )
         elif action_type == ActionType.TOGGLE_ON.lower():
             return self.execute_toggle_on(
                 toggleable_object_name=object_name, teleport=teleport
@@ -632,8 +720,8 @@ class EventSimulator:
         elif action_type == ActionType.PLACE.lower():
             assert receptacle_name is not None
             return self.execute_place(
-                receptacle_object_name=receptacle_name,
                 held_object=object_name,
+                receptacle_object_name=receptacle_name,
                 teleport=teleport,
             )
         else:
