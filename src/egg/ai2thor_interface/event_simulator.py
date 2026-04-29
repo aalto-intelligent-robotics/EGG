@@ -55,7 +55,10 @@ class EventSimulator:
             objectId=receptacle_name,
             anywhere=False,
         ).metadata["actionReturn"]
-        return [Position.model_validate(p) for p in spawnable_positions]
+        if spawnable_positions:
+            return [Position.model_validate(p) for p in spawnable_positions]
+        else:
+            return []
 
     def get_sim_visible_objects(self) -> list[str]:
         last_event = self.get_sim_previous_event()
@@ -669,23 +672,30 @@ class EventSimulator:
             self.update_object_state(object_name=object_name, timestamp=timestamp)
 
     def move_to_object(self, object_name: str, teleport: bool) -> bool:
-        interactable_pose = self.get_sim_interactable_poses(
+        interactable_poses = self.get_sim_interactable_poses(
             object_name=object_name,
             horizons=[30],
-            is_standing=[True],
-        )[0]
-
-        nav_position: Position = interactable_pose[0]
-        nav_angle: Rotation = interactable_pose[1]
-        is_move_success = self.move_to_position(
-            nav_position=nav_position,
-            nav_angle=nav_angle,
-            teleport=teleport,
+            is_standing=[True, False],
         )
-        agent_position, _, _, _ = self.get_sim_agent_state()
-        dist_to_goal = agent_position.euclidean2d(nav_position)
-        logger.info(f"Distance to nav goal: {dist_to_goal}")
-        return is_move_success
+        if interactable_poses:
+            nav_pose = interactable_poses[0]
+
+            nav_position: Position = nav_pose[0]
+            nav_angle: Rotation = nav_pose[1]
+            nav_standing: bool = nav_pose[2]
+            is_move_success = self.move_to_position(
+                nav_position=nav_position,
+                nav_angle=nav_angle,
+                standing=nav_standing,
+                teleport=teleport,
+            )
+            agent_position, _, _, _ = self.get_sim_agent_state()
+            dist_to_goal = agent_position.euclidean2d(nav_position)
+            logger.info(f"Distance to nav goal: {dist_to_goal}")
+            return is_move_success
+        else:
+            logger.warning(f"Could not find interactable pose")
+            return False
 
     def perform_action_from_str(
         self,
