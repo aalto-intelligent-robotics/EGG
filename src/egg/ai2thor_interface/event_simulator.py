@@ -198,7 +198,7 @@ class EventSimulator:
             _ = self.ai2thor_controller.step(action="Done")
             return True
 
-    def execute_pick(self, pick_object_name: str, teleport: bool = False) -> bool:
+    def execute_pick(self, pick_object_name: str, timestamp: int | None = None, teleport: bool = False) -> bool:
         _, _, agent_horizon, _ = self.get_sim_agent_state()
 
         success_pick: bool = False
@@ -232,8 +232,8 @@ class EventSimulator:
                     logger.info(
                         f"Successfully picked up {pick_object_name} at {pick_nav_position}"
                     )
-                    self.update_agent_state(timestamp=None, holding=pick_object_name)
-                    self.update_visible_objects_states(timestamp=None)
+                    self.update_agent_state(timestamp=timestamp, holding=pick_object_name)
+                    self.update_visible_objects_states(timestamp=timestamp)
                     _ = self.ai2thor_controller.step(action="Done")
                     success_pick = True
                     break
@@ -245,7 +245,7 @@ class EventSimulator:
             logger.warning(f"Unable to pick up {pick_object_name} after all attempts!")
         return success_pick
 
-    def execute_close(self, openable_object_name: str, teleport: bool = False) -> bool:
+    def execute_close(self, openable_object_name: str, timestamp: int | None = None, teleport: bool = False) -> bool:
         _, openable_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=openable_object_name
         )
@@ -280,8 +280,8 @@ class EventSimulator:
                     )
                     if self.is_sim_event_successful():
                         logger.info(f"Successfully closed {openable_object_name}")
-                        self.update_agent_state(timestamp=None)
-                        self.update_visible_objects_states(timestamp=None)
+                        self.update_agent_state(timestamp=timestamp)
+                        self.update_visible_objects_states(timestamp=timestamp)
                         success_close = True
                         _ = self.ai2thor_controller.step(action="Done")
                         break
@@ -296,7 +296,7 @@ class EventSimulator:
         return success_close
 
     def execute_toggle_on(
-        self, toggleable_object_name: str, teleport: bool = False
+        self, toggleable_object_name: str, timestamp: int | None = None, teleport: bool = False
     ) -> bool:
         _, toggleable_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=toggleable_object_name
@@ -332,8 +332,8 @@ class EventSimulator:
                     )
                     if self.is_sim_event_successful():
                         logger.info(f"Successfully toggled on {toggleable_object_name}")
-                        self.update_agent_state(timestamp=None)
-                        self.update_visible_objects_states(timestamp=None)
+                        self.update_agent_state(timestamp=timestamp)
+                        self.update_visible_objects_states(timestamp=timestamp)
                         success_toggle_on = True
                         _ = self.ai2thor_controller.step(action="Done")
                         break
@@ -348,7 +348,7 @@ class EventSimulator:
         return success_toggle_on
 
     def execute_toggle_off(
-        self, toggleable_object_name: str, teleport: bool = False
+        self, toggleable_object_name: str, timestamp: int | None = None, teleport: bool = False
     ) -> bool:
         _, toggleable_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=toggleable_object_name
@@ -386,8 +386,8 @@ class EventSimulator:
                         logger.info(
                             f"Successfully toggled off {toggleable_object_name}"
                         )
-                        self.update_agent_state(timestamp=None)
-                        self.update_visible_objects_states(timestamp=None)
+                        self.update_agent_state(timestamp=timestamp)
+                        self.update_visible_objects_states(timestamp=timestamp)
                         success_toggle_off = True
                         _ = self.ai2thor_controller.step(action="Done")
                         break
@@ -401,7 +401,7 @@ class EventSimulator:
             )
         return success_toggle_off
 
-    def execute_open(self, openable_object_name: str, teleport: bool = False) -> bool:
+    def execute_open(self, openable_object_name: str, timestamp: int | None = None, teleport: bool = False) -> bool:
         _, openable_object_node = self.egg.spatial.get_object_node_by_name(
             node_name=openable_object_name
         )
@@ -444,8 +444,8 @@ class EventSimulator:
                         and openable_object_state.is_open
                     ):
                         logger.info(f"Successfully opened {openable_object_name}")
-                        self.update_agent_state(timestamp=None)
-                        self.update_visible_objects_states(timestamp=None)
+                        self.update_agent_state(timestamp=timestamp)
+                        self.update_visible_objects_states(timestamp=timestamp)
                         success_open = True
                         _ = self.ai2thor_controller.step(action="Done")
                         break
@@ -459,6 +459,7 @@ class EventSimulator:
         self,
         receptacle_object_name: str,
         held_object: str,
+        timestamp: int | None = None,
         teleport: bool = False,
     ) -> bool:
         success_place: bool = False
@@ -500,8 +501,8 @@ class EventSimulator:
                     logger.info(
                         f"Succesfully placed {held_object_name} on {receptacle_object_name} at {place_nav_position}"
                     )
-                    self.update_agent_state(timestamp=None)
-                    self.update_visible_objects_states(timestamp=None)
+                    self.update_agent_state(timestamp=timestamp)
+                    self.update_visible_objects_states(timestamp=timestamp)
                     success_place = True
                     _ = self.ai2thor_controller.step(action="Done")
                     break
