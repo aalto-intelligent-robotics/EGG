@@ -270,9 +270,7 @@ class EventSimulator:
                         f"Unable to pick up {pick_object_name} at {pick_nav_position}, {'standing' if standing else 'crouching'}"
                     )
         if success_pick:
-            self.update_agent_state(
-                timestamp=timestamp, holding=pick_object_name
-            )
+            self.update_agent_state(timestamp=timestamp, holding=pick_object_name)
             self.update_visible_objects_states(timestamp=timestamp)
             _ = self.ai2thor_controller.step(action="Done")
         else:
@@ -514,9 +512,7 @@ class EventSimulator:
             self.update_visible_objects_states(timestamp=timestamp)
             _ = self.ai2thor_controller.step(action="Done")
         else:
-            logger.warning(
-                f"Unable to open {openable_object_name} after all attempts!"
-            )
+            logger.warning(f"Unable to open {openable_object_name} after all attempts!")
         return success_open
 
     def execute_place(
@@ -694,7 +690,6 @@ class EventSimulator:
             logger.info(f"Distance to nav goal: {dist_to_goal}")
             return is_move_success
         else:
-            logger.warning(f"Could not find interactable pose")
             return False
 
     def perform_action_from_str(
