@@ -18,7 +18,7 @@ logger: logging.Logger = getLogger(
     name=__name__,
     consoleLevel=logging.INFO,
     fileLevel=logging.DEBUG,
-    log_file="ai2thor_interfaceh/navigation.log",
+    log_file="ai2thor_interface/navigation.log",
 )
 
 OrientedNode: TypeAlias = tuple[
@@ -143,74 +143,11 @@ def key_to_pos(key: Key2D, y: float = 0.0) -> Position:
     return Position(x=x, y=y, z=z)
 
 
-def build_graph(
-    reachable_positions: list[Position],
-    grid_size: float,
-    allow_diagonals: bool = False,
-) -> nx.Graph:
-    """
-    Build an undirected grid graph from AI2-THOR reachable positions.
-    Nodes are (x,z) tuples snapped to the grid. Edges connect 4-neighbors
-    (or 8-neighbors if allow_diagonals=True).
-    """
-    G: nx.Graph = nx.Graph()
-    nodes: set[Key2D] = set()
 
-    # Add nodes snapped to grid
-    for p in reachable_positions:
-        nodes.add(pos_to_key(p, grid_size))
-
-    # Connect neighbors
-    # Directions are expressed in grid steps
-    if allow_diagonals:
-        neighbor_steps = [
-            (1, 0),
-            (-1, 0),
-            (0, 1),
-            (0, -1),
-            (1, 1),
-            (1, -1),
-            (-1, 1),
-            (-1, -1),
-        ]
-    else:
-        neighbor_steps = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-
-    for x, z in nodes:
-        G.add_node((x, z))
-        for dx, dz in neighbor_steps:
-            nx_pos: Key2D = (round(x + dx * grid_size, 6), round(z + dz * grid_size, 6))
-            # Snap neighbor to grid too, to be safe
-            nx_pos = (quantize(nx_pos[0], grid_size), quantize(nx_pos[1], grid_size))
-            if nx_pos in nodes:
-                # Weight = Euclidean distance
-                dist = math.hypot(nx_pos[0] - x, nx_pos[1] - z)
-                G.add_edge((x, z), nx_pos, weight=dist)
-
-    return G
 
 
 def euclidean(a: Key2D, b: Key2D) -> float:
     return math.hypot(a[0] - b[0], a[1] - b[1])
-
-
-def find_closest_node(G: nx.Graph, key: Key2D) -> Key2D | None:
-    """
-    Return the graph node closest to the given (x,z) key.
-    Useful if start/goal is slightly off the grid.
-    """
-    if key in G:
-        return key
-    if len(G) == 0:
-        return None
-    best: Key2D | None = None
-    best_d = float("inf")
-    for n in G.nodes:
-        d = euclidean(n, key)  # type: ignore[arg-type]
-        if d < best_d:
-            best_d = d
-            best = n  # type: ignore[assignment]
-    return best
 
 
 def angle_diff_deg(a: float, b: float) -> float:
@@ -422,72 +359,73 @@ def astar_best_to_any_goal(
     return best_path
 
 
-def plan_path_and_command(
-    start_pos: Position,
-    start_yaw_deg: float,
+def _build_base_graph(
     reachable_positions: list[Position],
-    goal_pos: Position,
-    grid_size: float = 0.25,
-    allow_diagonals: bool = False,
-    rotation_cost_per_90: float = 0.1,
-    move_cost_scale: float = 1.0,
-) -> tuple[list[Position], list[Command]]:
-    """
-    Plan an orientation-aware path using NetworkX A* over an oriented state graph.
-
-    Inputs:
-      - start_pos: current agent position
-      - reachable_positions: list from AI2-THOR (GetReachablePositions)
-      - goal_pos: target position to navigate to
-      - initial_yaw_deg: agent's starting yaw angle in degrees (0=+Z, 90=+X, etc.)
-      - grid_size: movement discretization; match AI2-THOR controller gridSize
-      - allow_diagonals: if True, base graph includes diagonal adjacency; agent still moves via cardinal headings
-      - rotation_cost_per_90: cost for a 90-degree rotation (tune to penalize turning)
-      - move_cost_scale: multiplier for move cost (usually 1.0)
-
-    Returns:
-      - waypoints: list of positions (x,y,z) to visit (includes start and goal)
-      - commands: list of AI2-THOR commands: {"action":"RotateLeft"/"RotateRight"/"MoveAhead"}
-    """
-    if not reachable_positions:
-        raise ValueError("reachable_positions is empty")
-
-    # Use y from start if available, else from first reachable
-    y_floor = start_pos.y
-
-    # 1) Build base position graph
+    grid_size: float,
+    allow_diagonals: bool,
+) -> nx.Graph:
+    """Build base position graph from reachable positions."""
     base_G = build_position_graph(
         reachable_positions, grid_size, allow_diagonals=allow_diagonals
     )
     if len(base_G) == 0:
         raise ValueError("Base graph is empty after building from reachable_positions.")
+    return base_G
 
-    # 2) Snap start and goal to nearest nodes
+
+def _map_start_goal_to_nodes(
+    base_G: nx.Graph,
+    start_pos: Position,
+    goal_pos: Position,
+    grid_size: float,
+) -> tuple[Key2D, Key2D]:
+    """Map start and goal positions to nearest graph nodes."""
     start_key = pos_to_key(start_pos, grid_size)
     goal_key = pos_to_key(goal_pos, grid_size)
     s_xy = find_closest_node(base_G, start_key)
     g_xy = find_closest_node(base_G, goal_key)
     if s_xy is None or g_xy is None:
         raise ValueError("Could not map start or goal to graph nodes.")
+    return s_xy, g_xy
 
-    # 3) Build oriented graph with rotation edges and forward moves
-    OG = build_oriented_graph(
+
+def _build_oriented_graph(
+    base_G: nx.Graph,
+    grid_size: float,
+    move_cost_scale: float,
+    rotation_cost_per_90: float,
+) -> nx.DiGraph:
+    """Build oriented graph with rotation edges and forward moves."""
+    return build_oriented_graph(
         base_graph=base_G,
         grid_size=grid_size,
         move_cost_scale=move_cost_scale,
         rotation_cost_per_90=rotation_cost_per_90,
     )
 
-    # 4) Run A* from oriented start to best oriented goal (any yaw at goal position)
+
+def _run_astar_search(
+    OG: nx.DiGraph,
+    start_pos: Position,
+    start_yaw_deg: float,
+    s_xy: Key2D,
+    g_xy: Key2D,
+) -> list[OrientedNode]:
+    """Run A* search from oriented start to best oriented goal."""
     start_yaw_idx = yaw_to_idx(start_yaw_deg)
     start_node: OrientedNode = (s_xy[0], s_xy[1], start_yaw_idx)
-    oriented_path: list[OrientedNode] = astar_best_to_any_goal(
+    return astar_best_to_any_goal(
         OG,
         start=start_node,
         goal_positions=[g_xy],
     )
 
-    # 5) Convert oriented path to commands and waypoints
+
+def _convert_path_to_commands(
+    oriented_path: list[OrientedNode],
+    y_floor: float,
+) -> tuple[list[Position], list[Command]]:
+    """Convert oriented path to commands and waypoints."""
     commands: list[Command] = []
     waypoints: list[Position] = []
 
@@ -527,3 +465,52 @@ def plan_path_and_command(
             raise RuntimeError("Unexpected transition in oriented path.")
 
     return waypoints, commands
+
+
+def plan_path_and_command(
+    start_pos: Position,
+    start_yaw_deg: float,
+    reachable_positions: list[Position],
+    goal_pos: Position,
+    grid_size: float = 0.25,
+    allow_diagonals: bool = False,
+    rotation_cost_per_90: float = 0.1,
+    move_cost_scale: float = 1.0,
+) -> tuple[list[Position], list[Command]]:
+    """
+    Plan an orientation-aware path using NetworkX A* over an oriented state graph.
+
+    Inputs:
+      - start_pos: current agent position
+      - reachable_positions: list from AI2-THOR (GetReachablePositions)
+      - goal_pos: target position to navigate to
+      - initial_yaw_deg: agent's starting yaw angle in degrees (0=+Z, 90=+X, etc.)
+      - grid_size: movement discretization; match AI2-THOR controller gridSize
+      - allow_diagonals: if True, base graph includes diagonal adjacency; agent still moves via cardinal headings
+      - rotation_cost_per_90: cost for a 90-degree rotation (tune to penalize turning)
+      - move_cost_scale: multiplier for move cost (usually 1.0)
+
+    Returns:
+      - waypoints: list of positions (x,y,z) to visit (includes start and goal)
+      - commands: list of AI2-THOR commands: {"action":"RotateLeft"/"RotateRight"/"MoveAhead"}
+    """
+    if not reachable_positions:
+        raise ValueError("reachable_positions is empty")
+
+    # Use y from start if available, else from first reachable
+    y_floor = start_pos.y
+
+    # 1) Build base position graph
+    base_G = _build_base_graph(reachable_positions, grid_size, allow_diagonals)
+
+    # 2) Snap start and goal to nearest nodes
+    s_xy, g_xy = _map_start_goal_to_nodes(base_G, start_pos, goal_pos, grid_size)
+
+    # 3) Build oriented graph with rotation edges and forward moves
+    OG = _build_oriented_graph(base_G, grid_size, move_cost_scale, rotation_cost_per_90)
+
+    # 4) Run A* from oriented start to best oriented goal (any yaw at goal position)
+    oriented_path = _run_astar_search(OG, start_pos, start_yaw_deg, s_xy, g_xy)
+
+    # 5) Convert oriented path to commands and waypoints
+    return _convert_path_to_commands(oriented_path, y_floor)

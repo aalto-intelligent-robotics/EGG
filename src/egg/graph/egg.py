@@ -3,6 +3,7 @@ from copy import deepcopy
 from datetime import datetime
 import tomllib
 import logging
+from pathlib import Path
 from typing import Self, Any, ClassVar
 from pydantic import BaseModel, Field, JsonValue, TypeAdapter, ConfigDict
 from typing_extensions import override
@@ -51,8 +52,16 @@ class EGG(BaseModel):
     @override
     def model_post_init(self, context: Any) -> None:
         if self.object_types_config_file:
-            with open(self.object_types_config_file, "rb") as f_objects:
-                self.object_types_config = tomllib.load(f_objects)
+            try:
+                config_path = Path(self.object_types_config_file)
+                with open(config_path, "rb") as f_objects:
+                    self.object_types_config = tomllib.load(f_objects)
+            except FileNotFoundError:
+                logger.error(f"Object types config file not found: {self.object_types_config_file}")
+                self.object_types_config = {}
+            except tomllib.TOMLDecodeError as e:
+                logger.error(f"Failed to parse TOML file {self.object_types_config_file}: {e}")
+                self.object_types_config = {}
         return super().model_post_init(context)
 
     def is_empty(self) -> bool:
@@ -99,10 +108,9 @@ class EGG(BaseModel):
         agent_state = AgentNode.AgentState.from_ai2thor(
             agent_metadata=Ai2ThorAgentMetadata.model_validate(agent_metadata)
         )
-        agent_node = AgentNode(
+        agent_node = cls._create_agent_node(
             node_id=node_id_gen,
-            name="agent",
-            timestamped_states={datetime_to_ns(datetime.now()): agent_state},
+            agent_state=agent_state,
         )
         node_id_gen += 1
 
@@ -125,23 +133,80 @@ class EGG(BaseModel):
             ai2thor_object_metadata
         )
 
-        for room in rooms_metadata:
+        room_nodes = cls._create_room_nodes(
+            rooms_metadata=rooms_metadata,
+            start_node_id=node_id_gen,
+        )
+        node_id_gen += len(room_nodes)
+        for room_node in room_nodes:
+            egg.spatial.add_room_node(new_room_node=room_node)
+
+        object_nodes = cls._create_object_nodes(
+            object_metadata=object_metadata,
+            start_node_id=node_id_gen,
+        )
+        node_id_gen += len(object_nodes)
+        for obj_node in object_nodes:
+            egg.spatial.add_object_node(new_object_node=obj_node)
+
+        cls._create_receptacle_edges(
+            egg=egg,
+        )
+
+        egg.node_id_gen = node_id_gen
+        return egg
+
+    @classmethod
+    def _create_agent_node(
+        cls,
+        node_id: int,
+        agent_state: AgentNode.AgentState,
+    ) -> AgentNode:
+        """Create an agent node from agent state."""
+        return AgentNode(
+            node_id=node_id,
+            name="agent",
+            timestamped_states={datetime_to_ns(datetime.now()): agent_state},
+        )
+
+    @classmethod
+    def _create_room_nodes(
+        cls,
+        rooms_metadata: list[dict[str, JsonValue]],
+        start_node_id: int,
+    ) -> list[RoomNode]:
+        """Create room nodes from room metadata."""
+        room_nodes: list[RoomNode] = []
+        for i, room in enumerate(rooms_metadata):
             room_node = RoomNode.from_ai2thor(
-                node_id=node_id_gen,
+                node_id=start_node_id + i,
                 room_metadata=Ai2ThorRoomMetadata.model_validate(room),
             )
-            egg.spatial.add_room_node(new_room_node=room_node)
-            node_id_gen += 1
+            room_nodes.append(room_node)
+        return room_nodes
 
-        for obj in object_metadata:
+    @classmethod
+    def _create_object_nodes(
+        cls,
+        object_metadata: list[dict[str, JsonValue]],
+        start_node_id: int,
+    ) -> list[ObjectNode]:
+        """Create object nodes from object metadata."""
+        object_nodes: list[ObjectNode] = []
+        for i, obj in enumerate(object_metadata):
             obj_node = ObjectNode.from_ai2thor(
-                node_id=node_id_gen,
+                node_id=start_node_id + i,
                 object_metadata=Ai2ThorObjectMetadata.model_validate(obj),
-                # object_types_config=
             )
-            egg.spatial.add_object_node(new_object_node=obj_node)
-            node_id_gen += 1
+            object_nodes.append(obj_node)
+        return object_nodes
 
+    @classmethod
+    def _create_receptacle_edges(
+        cls,
+        egg: Self,
+    ) -> None:
+        """Create receptacle edges for objects that are receptacles."""
         receptacle_nodes = egg.spatial.get_object_by_capabilities(
             capabilities=["is_receptacle"]
         )
@@ -162,9 +227,6 @@ class EGG(BaseModel):
                         relationship=SpatialEdge.SpatialRelationship.PARENT,
                     )
                     egg.spatial.add_spatial_edge(new_spatial_edge=edge)
-
-        egg.node_id_gen = node_id_gen
-        return egg
 
     def set_spatial_components(self, spatial_components: SpatialComponents):
         """
@@ -228,8 +290,4 @@ class EGG(BaseModel):
         egg_str = ""
         egg_str += self.spatial.pretty_str()
         egg_str += self.events.pretty_str()
-        # edge_str = "\n🔗🔗🔗 EDGES 🔗🔗🔗\n"
-        # for edge in self.event_edges:
-        #     edge_str += edge.pretty_str()
-        # egg_str += edge_str
         return egg_str

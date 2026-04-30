@@ -1,13 +1,11 @@
 from datetime import datetime
-from dis import Positions
-from enum import Enum
-import sys
 import numpy as np
 from numpy.typing import NDArray
 import logging
 from pydantic import BaseModel, Field, model_validator, ConfigDict
-from typing import Annotated, ClassVar, Literal
+from typing import Annotated, ClassVar, Any
 from typing_extensions import Self
+import sys
 
 from egg.ai2thor_interface.actions import ActionType
 from egg.utils.data import (
@@ -16,12 +14,10 @@ from egg.utils.data import (
     Ai2ThorRoomMetadata,
     Ai2ThorTemperature,
 )
-from egg.utils.geometry import Polygon, Position, Odometry, Rotation
+from egg.utils.geometry import Polygon, Position, Odometry, Rotation, AxisAlignedBoundingBox
 from egg.utils.logger import getLogger
-from egg.utils.geometry import AxisAlignedBoundingBox
 from egg.utils.timestamp import (
     datetime_to_ns,
-    print_timestamped_position,
     ns_to_datetime,
     print_timestamped_observation_odom,
 )
@@ -32,6 +28,44 @@ logger: logging.Logger = getLogger(
     fileLevel=logging.DEBUG,
     log_file="graph/node.log",
 )
+
+
+def _format_timestamped_states(timestamped_states: dict[int, Any], 
+                              get_state_dict_func) -> str:
+    """
+    Format timestamped states for pretty printing.
+    
+    :param timestamped_states: Dictionary mapping timestamps to state objects
+    :param get_state_dict_func: Function that converts a state object to a dictionary
+    :returns: Formatted string representation of timestamped states
+    """
+    state_str = ""
+    for ts, ts_state in timestamped_states.items():
+        state_dict = get_state_dict_func(ts_state)
+        state_on = [k for k, v in state_dict.items() if v is True]
+        state_str += (
+            f"\n\t- {ns_to_datetime(ts)}:"
+            + f"\n\t\t- Position: {state_dict.get('position', 'N/A')}"
+        )
+        
+        # Add boolean state flags
+        if state_on:
+            state_str += f"\n\t\t- {', '.join(state_on)}"
+            
+        # Add additional fields if they exist
+        for field in ['rotation', 'camera_horizon', 'is_standing', 'holding',
+                      'temperature', 'is_visible', 'openness',
+                      'parent_receptacles', 'receptacle_object_ids']:
+            if field in state_dict:
+                value = state_dict[field]
+                if field == 'parent_receptacles' or field == 'receptacle_object_ids':
+                    if value:
+                        state_str += f"\n\t\t- {field.replace('_', ' ').title()}: {', '.join(map(str, value))}"
+                else:
+                    state_str += f"\n\t\t- {field.replace('_', ' ').title()}: {value}"
+                    
+        state_str += "\n"
+    return state_str
 
 
 class GraphNode(BaseModel):
@@ -201,17 +235,15 @@ class AgentNode(SpatialNode):
     timestamped_states: dict[int, AgentState] = Field(default_factory=dict)
 
     def state_str(self) -> str:
-        state_str = "\n"
-        for ts, ts_state in self.timestamped_states.items():
-            state_str += (
-                f"\n\t- {ns_to_datetime(ts)}:"
-                + f"\n\t\t- Position: {ts_state.position}"
-                + f"\n\t\t- Rotation: {ts_state.rotation}"
-                + f"\n\t\t- Camera Horizon: {ts_state.camera_horizon}"
-                + f"\n\t\t- Standing: {ts_state.is_standing}"
-                + f"\n\t\t- Holding: {ts_state.holding}"
-            )
-        return state_str
+        def _get_agent_state_dict(state):
+            return {
+                "position": state.position,
+                "rotation": state.rotation,
+                "camera_horizon": state.camera_horizon,
+                "is_standing": state.is_standing,
+                "holding": state.holding
+            }
+        return _format_timestamped_states(self.timestamped_states, _get_agent_state_dict)
 
     def pretty_str(self) -> str:
         """
@@ -400,8 +432,8 @@ class ObjectNode(SpatialNode):
         :param max_timestamp: Maximum timestamp for retention.
         :type max_timestamp: int
         """
-        for timestamp in self.timestamped_states.keys():
-            if timestamp <= min_timestamp and timestamp >= max_timestamp:
+        for timestamp in list(self.timestamped_states.keys()):
+            if timestamp < min_timestamp or timestamp > max_timestamp:
                 _ = self.timestamped_states.pop(timestamp)
 
     def capabilities_str(self) -> str:

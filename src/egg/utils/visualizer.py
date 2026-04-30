@@ -1,5 +1,6 @@
 import json
 import logging
+from pathlib import Path
 from typing import ClassVar
 import open3d as o3d
 import open3d.visualization.gui as gui
@@ -76,8 +77,9 @@ class EGGVizConfig(BaseModel):
         return v
 
     @classmethod
-    def from_json(cls, path: str) -> "EGGVizConfig":
-        with open(path, "r") as f:
+    def from_json(cls, path: str | Path) -> "EGGVizConfig":
+        config_path = Path(path)
+        with open(config_path, "r") as f:
             viz_config = cls.model_validate(json.load(f))
         return viz_config
 
